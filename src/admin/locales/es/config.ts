@@ -614,6 +614,11 @@ export const configEs = {
   "auto.fallbackFixed.help":
     "Si la IA de arriba está apagada, un comentario sin regla recibe esta respuesta pública. <b>Nunca DM.</b> Apágalo y esos comentarios se ignoran.",
   "auto.fallbackFixed.ph": "¡Gracias por tu comentario! 🙌 Te leemos.",
+  "auto.followGate.notFollowing": "Follow gate: mensaje si todavía no te sigue",
+  "auto.followGate.notFollowingPh":
+    "Todavía no me apareces como seguidor 🙏 Sígueme y toca el botón otra vez para recibir el link 👇",
+  "auto.followGate.notFollowingHelp":
+    "Se le manda a quien tocó “Ya te sigo” pero la verificación dice que aún no te sigue (o no se pudo comprobar). Vacío = se usa el mensaje de follow de la regla. El botón de confirmación se agrega solo.",
   "auto.empty":
     "Aún no hay automatizaciones. Crea la primera con el formulario de abajo.",
   "auto.editTitle": "✏️ Editar automatización",

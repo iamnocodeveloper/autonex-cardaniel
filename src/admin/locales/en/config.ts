@@ -612,6 +612,11 @@ export const configEn: Record<keyof typeof configEs, string> = {
   "auto.fallbackFixed.help":
     "If the AI above is off, a comment with no rule gets this public reply. <b>Never DMs.</b> Turn it off and those comments are ignored.",
   "auto.fallbackFixed.ph": "Thanks for your comment! 🙌 We're reading.",
+  "auto.followGate.notFollowing": "Follow gate: message when they don't follow yet",
+  "auto.followGate.notFollowingPh":
+    "I still don't see you as a follower 🙏 Follow me and tap the button again to get the link 👇",
+  "auto.followGate.notFollowingHelp":
+    "Sent to whoever tapped “I follow you now” but verification says they still don't follow you (or it couldn't be checked). Empty = the rule's follow message is used. The confirm button is added automatically.",
   "auto.empty":
     "There are no automations yet. Create the first one with the form below.",
   "auto.editTitle": "✏️ Edit automation",

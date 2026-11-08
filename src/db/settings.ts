@@ -150,6 +150,10 @@ export const SETTING_KEYS = {
   // del dueño. Tiene prioridad sobre el texto fijo de commentFallbackMessage.
   commentAiFallbackEnabled: "comment_ai_fallback_enabled", // "0" | "1"
   commentAiFallbackPrompt: "comment_ai_fallback_prompt", // instrucción opcional para la IA
+  // Follow gate: qué se le dice a quien tocó "Ya te sigo" pero la verificación
+  // dice que todavía NO sigue. Vacío = texto por defecto del bot. Se le agrega
+  // automáticamente la instrucción de tocar el botón otra vez.
+  followGateNotFollowingMessage: "follow_gate_not_following_message",
   // Cuántos autos muestra el bot por consulta de inventario (clamp 1..50).
   inventoryPageSize: "inventory_page_size", // default 25
   // Idioma del PANEL (interfaz del dueño): "es" | "en". No afecta el idioma con
@@ -294,6 +298,7 @@ export const SETTING_LABELS: Record<string, string> = {
   [SETTING_KEYS.commentFallbackMessage]: "Texto de la respuesta pública a comentarios",
   [SETTING_KEYS.commentAiFallbackEnabled]: "Respuesta con IA a comentarios sin regla",
   [SETTING_KEYS.commentAiFallbackPrompt]: "Instrucciones para la respuesta con IA a comentarios",
+  [SETTING_KEYS.followGateNotFollowingMessage]: "Follow gate: mensaje si aún no sigue",
   [SETTING_KEYS.inventoryPageSize]: "Autos por consulta de inventario (bot)",
   [SETTING_KEYS.panelLanguage]: "Idioma del panel del bot (es | en)",
   [SETTING_KEYS.webSyncEnabled]: "Web Sync activado",

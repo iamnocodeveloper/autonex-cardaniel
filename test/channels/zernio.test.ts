@@ -91,6 +91,76 @@ describe("parseZernioEvents (message.received)", () => {
       ),
     ).toHaveLength(0);
   });
+
+  // ── message.sent: es el evento con el que Zernio entrega TODO lo saliente ──
+  // Sin esto el hilo del panel nunca mostraba lo enviado (ni lo del dueño desde
+  // la app del celular ni lo de las automatizaciones).
+  it("message.sent de la app del celular entra como eco de tipo owner", async () => {
+    const [msg] = await parseZernioEvents(
+      {
+        event: "message.sent",
+        message: {
+          id: "m_out1",
+          conversationId: "conv_1",
+          platform: "instagram",
+          direction: "outgoing",
+          text: "te confirmo por aquí",
+          sentVia: null, // enviado desde la app nativa
+          sender: { id: "acct_1", name: "mi_negocio" },
+        },
+        conversation: { id: "conv_1", participantName: "María" },
+        account: { id: "acct_1", accountId: "acct_1", platform: "instagram" },
+      },
+      envBase,
+    );
+    expect(msg.ownerEcho).toBe(true);
+    expect(msg.echoRole).toBe("owner");
+    expect(msg.text).toBe("te confirmo por aquí");
+  });
+
+  it("message.sent del bot/automatización entra como eco de tipo assistant (no pausa)", async () => {
+    const [msg] = await parseZernioEvents(
+      {
+        event: "message.sent",
+        message: {
+          id: "m_out2",
+          conversationId: "conv_1",
+          platform: "instagram",
+          direction: "outgoing",
+          text: "¡Aquí lo tienes! 👇",
+          sentVia: "comment_automation",
+          sender: { id: "acct_1", name: "mi_negocio" },
+        },
+        conversation: { id: "conv_1", participantName: "María" },
+        account: { id: "acct_1", accountId: "acct_1", platform: "instagram" },
+      },
+      envBase,
+    );
+    expect(msg.ownerEcho).toBe(true);
+    expect(msg.echoRole).toBe("assistant");
+  });
+
+  it("message.sent con solo media (foto desde el celular) no se descarta", async () => {
+    const [msg] = await parseZernioEvents(
+      {
+        event: "message.sent",
+        message: {
+          id: "m_out3",
+          conversationId: "conv_1",
+          platform: "instagram",
+          direction: "outgoing",
+          text: null,
+          sentVia: null,
+          attachments: [{ type: "image", url: "https://cdn.example/foto.jpg" }],
+        },
+        conversation: { id: "conv_1" },
+        account: { id: "acct_1", accountId: "acct_1", platform: "instagram" },
+      },
+      envBase,
+    );
+    expect(msg.ownerEcho).toBe(true);
+    expect(msg.imageUrl).toBe("https://cdn.example/foto.jpg");
+  });
 });
 
 describe("auto-DM por keyword en comentarios", () => {
@@ -608,6 +678,14 @@ function makeDbStub(rule: any, settings: Record<string, string> = {}) {
           const p = pending.find((x) => x.commenter_id === params[0]);
           return (p ? { rule_id: p.rule_id, comment_id: p.comment_id } : null) as T;
         }
+        if (/SELECT rule_id, comment_id, created_at FROM comment_fingerprints/.test(sql)) {
+          const f = fingerprints.find((x) => x.dedup_key === params[0]);
+          return (f ? { rule_id: f.rule_id, comment_id: f.comment_id, created_at: f.created_at } : null) as T;
+        }
+        if (/SELECT id FROM auto_rules[\s\S]*require_follow = 1/.test(sql)) {
+          // Fallback del follow gate: la regla activa con require_follow.
+          return (rule && rule.require_follow === 1 ? { id: rule.id } : null) as T;
+        }
         if (/SELECT \* FROM auto_rules WHERE id = \?/.test(sql)) {
           return rule as T;
         }
@@ -879,5 +957,335 @@ describe("follow gate (require_follow)", () => {
     expect(sendCall).toBeTruthy();
     const body = JSON.parse((sendCall![1] as RequestInit).body as string);
     expect(body.message).toBe("Aquí tienes el link:");
+  });
+
+  // ── Confirmación del follow gate (formato REAL del webhook de Zernio) ─────
+  // El tap de un botón llega en `message.metadata.postbackPayload`, con
+  // `message.text` vacío. Antes el código solo miraba `text` + el prefijo de
+  // platformMessageId, así que en producción el "Ya te sigo" nunca se atendía.
+  it("postback real (metadata.postbackPayload, text vacío): si ya sigue, entrega el recurso", async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      if (String(url).includes("/follow-status/")) {
+        return new Response(JSON.stringify({ isFollower: true }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ ok: true }), { status: 200 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const env = {
+      ZERNIO_API_KEY: "zkey_test",
+      DB: makeDbStub(fgRule),
+      DASHBOARD_BASE_URL: "https://kooni.app",
+    } as unknown as Env;
+
+    const out = await parseZernioEvents(
+      {
+        event: "message.received",
+        message: {
+          id: "m_pb2",
+          conversationId: "conv_pb2",
+          platform: "instagram",
+          direction: "incoming",
+          text: null,
+          sender: { id: "usr_fg", name: "pepe" },
+          metadata: { postbackPayload: "followcheck:rule-fg:cm_9", postbackTitle: "Ya te sigo" },
+        },
+        conversation: { id: "conv_pb2" },
+        account: { id: "acct_1", accountId: "acct_1", platform: "instagram" },
+      },
+      env,
+    );
+    expect(out).toHaveLength(0); // no entra al agente
+    const calls = fetchMock.mock.calls as unknown as [string, RequestInit][];
+    // Verificación con refresco (salta la caché de Zernio).
+    const followCall = calls.find((c) => String(c[0]).includes("/follow-status/"));
+    expect(followCall).toBeTruthy();
+    expect(String(followCall![0])).toContain("refresh=true");
+    // Y entrega el mensaje con el link.
+    const sendCall = calls.find((c) => String(c[0]).includes("/conversations/conv_pb2/messages"));
+    expect(sendCall).toBeTruthy();
+    const body = JSON.parse((sendCall![1] as RequestInit).body as string);
+    expect(body.message).toBe("Aquí tienes el link:");
+  });
+
+  it("postback real: si NO sigue todavía, avisa y deja el botón para reintentar", async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      if (String(url).includes("/follow-status/")) {
+        return new Response(JSON.stringify({ isFollower: false }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ ok: true }), { status: 200 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const env = {
+      ZERNIO_API_KEY: "zkey_test",
+      DB: makeDbStub(fgRule),
+      DASHBOARD_BASE_URL: "https://kooni.app",
+    } as unknown as Env;
+
+    await parseZernioEvents(
+      {
+        event: "message.received",
+        message: {
+          id: "m_pb3",
+          conversationId: "conv_pb3",
+          platform: "instagram",
+          direction: "incoming",
+          text: null,
+          sender: { id: "usr_no", name: "pepe" },
+          metadata: { postbackPayload: "followcheck:rule-fg:cm_9", postbackTitle: "Ya te sigo" },
+        },
+        conversation: { id: "conv_pb3" },
+        account: { id: "acct_1", accountId: "acct_1", platform: "instagram" },
+      },
+      env,
+    );
+    const calls = fetchMock.mock.calls as unknown as [string, RequestInit][];
+    const sendCall = calls.find((c) => String(c[0]).includes("/conversations/conv_pb3/messages"));
+    expect(sendCall).toBeTruthy();
+    const body = JSON.parse((sendCall![1] as RequestInit).body as string);
+    // NO se entrega el link: se le dice que todavía no se le ve como seguidor.
+    expect(body.message).not.toBe("Aquí tienes el link:");
+    expect(body.message).toContain("no me apareces como seguidor");
+    expect(body.message).toContain("toca el botón otra vez");
+    // Y se le deja el botón de confirmación para reintentar.
+    expect(body.buttons[0].type).toBe("postback");
+    expect(body.buttons[0].payload).toContain("followcheck:rule-fg");
+  });
+
+  it("postback real: si el follow no se puede verificar, pide reintentar en vez de entregar", async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      if (String(url).includes("/follow-status/")) {
+        // consent_required: un comentarista que nunca ha escrito.
+        return new Response(
+          JSON.stringify({ isFollower: null, unavailableReason: "consent_required" }),
+          { status: 200 },
+        );
+      }
+      return new Response(JSON.stringify({ ok: true }), { status: 200 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const env = {
+      ZERNIO_API_KEY: "zkey_test",
+      DB: makeDbStub(fgRule),
+      DASHBOARD_BASE_URL: "https://kooni.app",
+    } as unknown as Env;
+
+    await parseZernioEvents(
+      {
+        event: "message.received",
+        message: {
+          id: "m_pb4",
+          conversationId: "conv_pb4",
+          platform: "instagram",
+          direction: "incoming",
+          text: null,
+          sender: { id: "usr_unk", name: "pepe" },
+          metadata: { postbackPayload: "followcheck:rule-fg:cm_9", postbackTitle: "Ya te sigo" },
+        },
+        conversation: { id: "conv_pb4" },
+        account: { id: "acct_1", accountId: "acct_1", platform: "instagram" },
+      },
+      env,
+    );
+    const calls = fetchMock.mock.calls as unknown as [string, RequestInit][];
+    const sendCall = calls.find((c) => String(c[0]).includes("/conversations/conv_pb4/messages"));
+    expect(sendCall).toBeTruthy();
+    const body = JSON.parse((sendCall![1] as RequestInit).body as string);
+    expect(body.message).not.toBe("Aquí tienes el link:");
+    expect(body.message).toContain("vuelve a tocar el botón");
+    expect(body.buttons[0].type).toBe("postback");
+  });
+
+  it("un postback que NO es de follow (ej. 'Agendar') no dispara el follow gate", async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ ok: true }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const env = {
+      ZERNIO_API_KEY: "zkey_test",
+      DB: makeDbStub(fgRule),
+      DASHBOARD_BASE_URL: "https://kooni.app",
+    } as unknown as Env;
+
+    await parseZernioEvents(
+      {
+        event: "message.received",
+        message: {
+          id: "m_other",
+          conversationId: "conv_other",
+          platform: "instagram",
+          direction: "incoming",
+          text: null,
+          sender: { id: "usr_fg", name: "pepe" },
+          metadata: { postbackPayload: "agendar", postbackTitle: "Agendar" },
+        },
+        conversation: { id: "conv_other" },
+        account: { id: "acct_1", accountId: "acct_1", platform: "instagram" },
+      },
+      env,
+    );
+    const calls = fetchMock.mock.calls as unknown as [string, RequestInit][];
+    // No consulta follow-status ni entrega nada por el follow gate.
+    expect(calls.find((c) => String(c[0]).includes("/follow-status/"))).toBeUndefined();
+    expect(calls.find((c) => String(c[0]).includes("/conversations/conv_other/messages"))).toBeUndefined();
+  });
+
+  it("tap 'Ya te sigo' SIN pendiente guardado: igual verifica y entrega el recurso", async () => {
+    // Caso real: el pendiente se pierde (deploy a mitad, INSERT fallido). Antes
+    // el tap se descartaba en silencio y el usuario nunca recibía el link.
+    const fetchMock = vi.fn(async (url: string) => {
+      if (String(url).includes("/follow-status/")) {
+        return new Response(JSON.stringify({ isFollower: true }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ ok: true }), { status: 200 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const env = {
+      ZERNIO_API_KEY: "zkey_test",
+      DB: makeDbStub(fgRule), // sin follow_gate_pending
+      DASHBOARD_BASE_URL: "https://kooni.app",
+    } as unknown as Env;
+
+    await parseZernioEvents(
+      {
+        event: "message.received",
+        message: {
+          id: "m_fb",
+          conversationId: "conv_fb",
+          platform: "instagram",
+          direction: "incoming",
+          text: "ya te sigo",
+          sender: { id: "usr_lost", name: "pepe" },
+        },
+        conversation: { id: "conv_fb" },
+        account: { id: "acct_1", accountId: "acct_1", platform: "instagram" },
+      },
+      env,
+    );
+
+    const calls = fetchMock.mock.calls as unknown as [string, RequestInit][];
+    const sendCall = calls.find((c) => String(c[0]).includes("/conversations/conv_fb/messages"));
+    expect(sendCall).toBeTruthy();
+    const body = JSON.parse((sendCall![1] as RequestInit).body as string);
+    expect(body.message).toBe("Aquí tienes el link:");
+  });
+});
+
+// ── Dedup por huella: una pata pendiente NO debe bloquear la reentrega ──────
+// Caso real reportado: la regla era comentario→DM+público; la primera entrega
+// mandó el follow prompt y la pública falló. Zernio reenvió el comentario y el
+// panel mostró "SKIPPED · Deduplicado por huella" — la respuesta pública al
+// comentario nunca se envió.
+describe("huella: reentrega con la respuesta pública pendiente", () => {
+  const ruleBoth = {
+    id: "rule_both2",
+    kind: "comment_dm_public",
+    platform: "instagram",
+    keywords: JSON.stringify(["mailflare"]),
+    message: "¡Aquí lo tienes! 👇 Mailflare",
+    button_label: "Abrir",
+    button_url: "https://github.com/hieunc229/mailflare",
+    reply_to_comment: "¡Te lo mandé por privado! ✨",
+    is_active: 1,
+    whole_word_match: 1,
+    require_follow: 0,
+    follow_prompt_message: null,
+    follow_button_label: null,
+    ai_reply_prompt: null,
+    created_at: Date.now(),
+    updated_at: Date.now(),
+  };
+
+  it("la primera entrega manda DM y pública; la segunda se deduplica", async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      if (String(url).includes("/v1/accounts")) {
+        return new Response(
+          JSON.stringify({ accounts: [{ _id: "acct_1", platform: "instagram", username: "mi_negocio" }] }),
+          { status: 200 },
+        );
+      }
+      return new Response(JSON.stringify({ ok: true }), { status: 200 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const env = {
+      ZERNIO_API_KEY: "zkey_test",
+      DB: makeDbStub(ruleBoth),
+      DASHBOARD_BASE_URL: "https://kooni.app",
+    } as unknown as Env;
+
+    const payload = {
+      event: "comment.received",
+      comment: {
+        id: "cm_mf1",
+        postId: "post_1",
+        platformPostId: "pp_1",
+        text: "quiero mailflare",
+        author: { id: "usr_mf", username: "raulcubillosmexico" },
+      },
+      account: { id: "acct_1", accountId: "acct_1", platform: "instagram", username: "mi_negocio" },
+    };
+
+    await parseZernioEvents(payload, env);
+
+    // 1) DM privado y 2) respuesta pública, ambas enviadas.
+    let calls = fetchMock.mock.calls as unknown as [string, RequestInit][];
+    expect(calls.find((c) => String(c[0]).includes("/private-reply"))).toBeTruthy();
+    expect(calls.find((c) => /\/v1\/inbox\/comments\/post_1$/.test(String(c[0])))).toBeTruthy();
+
+    // Reentrega con OTRO id y el mismo texto → no debe volver a responder.
+    const before = calls.length;
+    await parseZernioEvents(
+      { ...payload, comment: { ...payload.comment, id: "cm_mf1_dup" } },
+      env,
+    );
+    calls = fetchMock.mock.calls as unknown as [string, RequestInit][];
+    const after = calls.slice(before);
+    expect(after.find((c) => String(c[0]).includes("/private-reply"))).toBeUndefined();
+    expect(after.find((c) => /\/v1\/inbox\/comments\/post_1$/.test(String(c[0])))).toBeUndefined();
+  });
+
+  it("si la pública quedó pendiente, la reentrega SÍ la envía", async () => {
+    // La pública falla la primera vez y funciona en el reintento.
+    let publicAttempts = 0;
+    const fetchMock = vi.fn(async (url: string) => {
+      if (String(url).includes("/v1/accounts")) {
+        return new Response(
+          JSON.stringify({ accounts: [{ _id: "acct_1", platform: "instagram", username: "mi_negocio" }] }),
+          { status: 200 },
+        );
+      }
+      if (/\/v1\/inbox\/comments\/post_1$/.test(String(url))) {
+        publicAttempts++;
+        if (publicAttempts === 1) return new Response("boom", { status: 500 });
+        return new Response(JSON.stringify({ ok: true }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ ok: true }), { status: 200 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const env = {
+      ZERNIO_API_KEY: "zkey_test",
+      DB: makeDbStub(ruleBoth),
+      DASHBOARD_BASE_URL: "https://kooni.app",
+    } as unknown as Env;
+
+    const payload = {
+      event: "comment.received",
+      comment: {
+        id: "cm_pend",
+        postId: "post_1",
+        platformPostId: "pp_1",
+        text: "quiero mailflare",
+        author: { id: "usr_pend", username: "techpaw" },
+      },
+      account: { id: "acct_1", accountId: "acct_1", platform: "instagram", username: "mi_negocio" },
+    };
+
+    // 1.ª entrega: DM sí, pública falla (500).
+    await parseZernioEvents(payload, env);
+    expect(publicAttempts).toBe(1);
+
+    // Reentrega del MISMO comentario con otro id → la pública se reintenta.
+    await parseZernioEvents(
+      { ...payload, comment: { ...payload.comment, id: "cm_pend_dup" } },
+      env,
+    );
+    expect(publicAttempts).toBe(2);
   });
 });

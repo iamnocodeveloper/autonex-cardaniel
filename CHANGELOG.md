@@ -11,6 +11,103 @@ puede tener su cuenta y las de varios clientes, al instalar se pregunta «¿con 
 otra?»; en agente/CI se exige `--account <email>` (o `--login --wait`) y, si no, **aborta** (no
 instala/licencia bajo la cuenta equivocada). Nuevo comando `logout` para cambiar de cuenta.
 
+## [1.66.0] — 2026-11-08
+
+### Corregido — el hilo no mostraba lo enviado (app del celular ni automatizaciones)
+
+El panel solo tenía los mensajes que **entraban**. Todo lo saliente —lo que el
+dueño escribe desde la app de Instagram/Messenger y lo que envían las
+automatizaciones— no aparecía en Conversaciones.
+
+- **Faltaba el evento `message.sent`.** Zernio entrega TODO lo saliente por
+  `message.sent`; el webhook solo se suscribía a `message.received`,
+  `comment.received` y `reaction.received`. Ahora se registra también
+  `message.sent`, y **`/admin/conexiones` repara solo** los endpoints ya
+  existentes al abrirse (sin reconectar ni volver a pegar la API key).
+- **`sentVia` decide el rol**: `null`/`human` → lo escribió una persona
+  (roles `owner`), y `api`/`comment_automation`/`workflow`/`sequence`/`broadcast`
+  → lo mandó el bot o una automatización (rol `assistant`). Antes todo eco se
+  registraba como `owner` y **pausaba el bot**; una automatización pausando el
+  bot era un efecto secundario indeseado.
+- **Salientes con solo media** (una foto enviada desde el celular) ya no se
+  descartan: se registran con su marcador.
+
+### Corregido — `SKIPPED · Deduplicado por huella` con la respuesta pública pendiente
+
+Caso real (comentario de `raulcubillosmexico`): la regla era
+comentario→DM+público, el DM salió y la respuesta pública no. Zernio reenvió el
+comentario y el panel registró **skipped por huella**, así que la respuesta
+pública al comentario **no se envió nunca**.
+
+- **La huella deduplicaba el comentario entero**, aunque una regla tenga dos
+  patas que se completan en momentos distintos. Ahora, si llega una reentrega y
+  la respuesta pública sigue pendiente, **se reintenta solo esa pata** (el claim
+  por pata en `processed_comments` sigue evitando duplicados).
+- Al reintentar se usa el **`comment_id` original** guardado en la huella (no el
+  id nuevo que inventa Zernio), para no perder el estado ni el dedup.
+- **El claim de huella se libera** cuando no se envió nada (fallo de API, límite
+  alcanzado): antes quedaba tomado para siempre y el comentario quedaba sin
+  respuesta aunque la automatización la tuviera.
+
+### Corregido — "le di ya te sigo y no se envió nada"
+
+- **Tap sin pendiente guardado**: si la fila de `follow_gate_pending` se perdió
+  (deploy a mitad, INSERT fallido), el tap se descartaba **en silencio**. Ahora
+  cae a la automatización de follow gate más reciente, verifica el follow y
+  responde igual.
+- Se mantiene todo lo de 1.65.0: payload real del botón, `refresh=true` contra
+  la caché y la verificación en trío (`yes`/`no`/`unknown`).
+
+Pruebas: `test/channels/zernio.test.ts` → **38** (5 nuevas: `message.sent` de la
+app, del bot, con solo media, reentrega con pública pendiente y tap sin
+pendiente). `pnpm typecheck` limpio.
+
+## [1.65.0] — 2026-11-08
+
+### Corregido — el follow gate no entregaba el recurso al confirmar
+
+Reportado en producción: el DM de "sígueme" llegaba, pero al tocar **"Ya te
+sigo"** no pasaba nada — ni se entregaba el recurso ni se avisaba que faltaba
+seguir. Tres causas, las tres arregladas:
+
+- **El tap del botón nunca se leía.** Zernio entrega la pulsación en
+  `message.metadata.postbackPayload` (y la etiqueta en `postbackTitle`), con
+  `message.text` **vacío**. El código solo miraba `message.text` y el prefijo
+  `postback_` de `platformMessageId`, así que la confirmación se caía: el
+  mensaje entraba al agente como "sin texto" o se descartaba. Ahora se lee el
+  payload real (y también `quickReplyPayload`, `callbackData`, `interactiveId`).
+- **"No lo sé" se trataba como "no me sigue".** `follow-status` devuelve
+  `isFollower: null` con un `unavailableReason` cuando Meta no puede resolverlo
+  (lo normal en un comentarista que nunca ha escrito: `consent_required`).
+  El código lo metía en el mismo saco que `false`, así que un seguidor real
+  quedaba en un bucle de "aún no me sigues". Nuevo helper
+  `checkInstagramFollowStatus()` (`src/channels/zernioAccounts.ts`) que devuelve
+  un **trío**: `yes` / `no` / `unknown`, y cada uno se maneja distinto.
+- **La verificación leía caché.** Zernio cachea la respuesta por (cuenta,
+  usuario); al confirmar se pide con `refresh=true` para que un follow recién
+  hecho se vea al instante.
+
+Comportamiento ahora, al tocar "Ya te sigo":
+
+| Verificación | Qué hace el bot |
+|---|---|
+| **Sí sigue** | Entrega el mensaje de la regla + el link (trackeado si hay `buttonUrl`) y limpia el pendiente. |
+| **No sigue** | Avisa que todavía no aparece como seguidor y **deja el botón para reintentar**. El pendiente se conserva. |
+| **No se puede verificar** | Avisa y pide reintentar en unos segundos (nunca finge que ya cumplió). |
+
+- Mensaje del caso "todavía no te sigue" **editable desde el panel**
+  (Automatizaciones → follow gate): setting `follow_gate_not_following_message`.
+- El follow gate se **omite en plataformas que no lo soportan** (follow-status
+  es solo de Instagram; en Facebook/TikTok el gate era un bucle imposible de
+  cumplir) y un postback ajeno (ej. "Agendar") ya no puede disparar la entrega
+  por error.
+- Cada intento queda en el historial de automatizaciones con su estado honesto
+  (`sent` / `skipped` + motivo).
+
+Pruebas: `test/channels/zernio.test.ts` (+4): payload real con `text` vacío
+(entrega), no sigue (avisa y deja botón), no verificable (pide reintentar) y
+postback ajeno (no dispara el gate). `pnpm typecheck` limpio.
+
 ## [1.64.0] — 2026-10-29
 
 ### Corregido — el análisis IA del inventario no corría

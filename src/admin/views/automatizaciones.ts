@@ -127,6 +127,7 @@ export async function renderAutomatizaciones(env: Env, saved?: boolean, error?: 
   let fbMessage = "";
   let fbAiEnabled = false;
   let fbAiPrompt = "";
+  let fgNotFollowing = "";
   try {
     const { SettingsRepo, SETTING_KEYS } = await import("../../db/settings");
     const s = new SettingsRepo(new Db(env.DB));
@@ -134,6 +135,7 @@ export async function renderAutomatizaciones(env: Env, saved?: boolean, error?: 
     fbMessage = (await s.get(SETTING_KEYS.commentFallbackMessage)) ?? "";
     fbAiEnabled = (await s.get(SETTING_KEYS.commentAiFallbackEnabled)) === "1";
     fbAiPrompt = (await s.get(SETTING_KEYS.commentAiFallbackPrompt)) ?? "";
+    fgNotFollowing = (await s.get(SETTING_KEYS.followGateNotFollowingMessage)) ?? "";
   } catch {
     // sin settings: fallback apagado
   }
@@ -156,6 +158,11 @@ export async function renderAutomatizaciones(env: Env, saved?: boolean, error?: 
         </span>
       </label>
       <textarea name="message" rows="2" placeholder="${t("auto.fallbackFixed.ph")}" style="${INPUT_STYLE}">${esc(fbMessage)}</textarea>
+      <div style="border-top:1px solid var(--line);padding-top:10px;display:flex;flex-direction:column;gap:6px">
+        <label class="font-display font-semibold text-[12px] text-cream" for="follow_not_following">${t("auto.followGate.notFollowing")}</label>
+        <textarea id="follow_not_following" name="follow_not_following" rows="2" placeholder="${t("auto.followGate.notFollowingPh")}" style="${INPUT_STYLE}">${esc(fgNotFollowing)}</textarea>
+        <span class="text-dim text-[10.5px]">${t("auto.followGate.notFollowingHelp")}</span>
+      </div>
       <div><button type="submit" style="background:var(--accent);color:var(--on-accent);font-weight:700;border:none;padding:8px 16px;font-size:12px;cursor:pointer">${t("common.save")}</button></div>
     </form>`;
 

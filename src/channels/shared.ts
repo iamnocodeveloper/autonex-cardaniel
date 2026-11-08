@@ -21,6 +21,15 @@ export interface IncomingMessage {
    * (takeover). El webhook lo enruta con `recordOwnerEcho`, no con `ingest`.
    */
   ownerEcho?: boolean;
+  /**
+   * Con qué rol se registra un eco saliente en el hilo:
+   *  - `owner`     → lo escribió una persona (app nativa o inbox del proveedor).
+   *  - `assistant` → lo envió el bot o una automatización (respuesta de
+   *                  comentario, campaña, etc.). Se registra para que el panel
+   *                  muestre la conversación completa, pero NO pausa el bot.
+   * Ausente = `owner`.
+   */
+  echoRole?: "owner" | "assistant";
   receivedAt: number;
   rawPayload: unknown;
   /** Para responder en el hilo del mensaje entrante (Telegram grupos). */

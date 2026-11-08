@@ -1476,6 +1476,16 @@ adminApp.get("/conexiones", async (c) => {
   // Fallback de origin para la webhook URL: si DASHBOARD_BASE_URL está vacío,
   // usamos la URL real del request para que las cards SIEMPRE muestren su webhook.
   const baseUrl = c.env.DASHBOARD_BASE_URL?.trim() || new URL(c.req.url).origin;
+
+  // Auto-reparación del webhook de Zernio: una instalación conectada ANTES de
+  // que se suscribiera `message.sent` (o `comment.received`) recibía los
+  // entrantes pero no registraba NADA de lo enviado en el hilo del panel, y las
+  // automatizaciones de comentarios no corrían. Al abrir esta pantalla se
+  // corrigen los eventos del endpoint existente sin pedir reconectar.
+  await ensureZernioWebhookEvents(c.env, zernioCreds, baseUrl).catch((e) =>
+    console.warn("[conexiones] no se pudo reparar el webhook de Zernio:", e),
+  );
+
   return c.html(await renderConexiones(c.env, pausedChannels, zernioAccounts, rateUsage, {
     zernioCreds,
     telegramToken,
@@ -1518,6 +1528,67 @@ adminApp.get("/conexiones", async (c) => {
   }));
 });
 
+// Eventos que Kooni necesita de Zernio. `message.sent` es el que trae TODO lo
+// saliente (app del celular + bot + automatizaciones): sin él, el hilo del
+// panel nunca muestra lo enviado.
+const ZERNIO_WEBHOOK_EVENTS = [
+  "message.received",
+  "message.sent",
+  "comment.received",
+  "reaction.received",
+];
+
+/**
+ * Deja el endpoint de webhook de Zernio con los eventos que Kooni usa.
+ *
+ * Existe porque la lista de eventos se fijó al conectar el canal: una
+ * instalación conectada antes de agregar `message.sent` seguiría recibiendo
+ * solo entrantes para siempre. Repara sin reconectar y sin tocar el secret.
+ * Silencioso a propósito: si falla, la pantalla de Conexiones igual carga.
+ */
+async function ensureZernioWebhookEvents(
+  env: Env,
+  creds: { apiKey: string | undefined; webhookSecret: string | undefined },
+  baseUrl: string,
+): Promise<void> {
+  const apiKey = creds.apiKey?.trim();
+  if (!apiKey) return;
+  const zBase = env.ZERNIO_API_BASE_URL ?? "https://zernio.com/api";
+  const whUrl = `${baseUrl.replace(/\/$/, "")}/webhooks/zernio`;
+  const headers = { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" };
+
+  const listRes = await fetch(`${zBase}/v1/webhooks/settings`, {
+    headers,
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!listRes.ok) return;
+  const listJson = (await listRes.json().catch(() => ({}))) as {
+    webhooks?: Array<{ _id: string; url?: string; events?: string[]; isActive?: boolean }>;
+  };
+  const mine = (listJson.webhooks ?? []).filter((w) => w.url === whUrl);
+  if (mine.length === 0) return; // sin endpoint propio: lo crea el formulario
+
+  for (const w of mine) {
+    const current = w.events ?? [];
+    const missing = ZERNIO_WEBHOOK_EVENTS.filter((e) => !current.includes(e));
+    if (missing.length === 0) continue;
+    const body: Record<string, unknown> = {
+      _id: w._id,
+      url: whUrl,
+      // Se SUMAN los que falten; se conservan los que el dueño haya puesto.
+      events: [...current, ...missing],
+      isActive: true,
+    };
+    await fetch(`${zBase}/v1/webhooks/settings`, {
+      method: "PUT",
+      headers,
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(8000),
+    }).catch(() => undefined);
+    console.log(`[conexiones] webhook Zernio actualizado (+${missing.join(", ")})`);
+  }
+}
+
 // Conectar Zernio desde el panel: guarda API key + webhook secret en D1 (settings)
 // para que el canal quede activo sin `wrangler secret put` ni redeploy. Si viene
 // una key nueva, se valida con GET /v1/accounts antes de guardarla.
@@ -1528,7 +1599,11 @@ adminApp.post("/conexiones/zernio", async (c) => {
   const zBase = c.env.ZERNIO_API_BASE_URL ?? "https://zernio.com/api";
   const baseUrl = (c.env.DASHBOARD_BASE_URL?.trim() || new URL(c.req.url).origin).replace(/\/$/, "");
   const whUrl = `${baseUrl}/webhooks/zernio`;
-  const EVENTS = ["message.received", "comment.received", "reaction.received"];
+  // message.sent: es como Zernio entrega TODO lo saliente — lo que el dueño
+  // escribe desde la app del celular (sentVia null) y lo que envían el bot y
+  // las automatizaciones de comentarios. Sin este evento el hilo del panel se
+  // queda sin lo enviado y solo muestra lo que entró.
+  const EVENTS = ZERNIO_WEBHOOK_EVENTS;
 
   if (String(form.get("clear") ?? "") === "1") {
     // Desregistrar el webhook de Zernio (best-effort) antes de borrar las creds.
@@ -2311,6 +2386,7 @@ adminApp.post("/automatizaciones/fallback", async (c) => {
   await repo.set(SETTING_KEYS.commentFallbackMessage, String(form.get("message") ?? "").trim());
   await repo.set(SETTING_KEYS.commentAiFallbackEnabled, form.get("ai_enabled") === "1" ? "1" : "0");
   await repo.set(SETTING_KEYS.commentAiFallbackPrompt, String(form.get("ai_prompt") ?? "").trim());
+  await repo.set(SETTING_KEYS.followGateNotFollowingMessage, String(form.get("follow_not_following") ?? "").trim());
   return c.redirect("/admin/automatizaciones?saved=1");
 });
 

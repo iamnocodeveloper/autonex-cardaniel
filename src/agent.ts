@@ -64,6 +64,8 @@ export interface AgentIncomingPayload {
   isOwnerMessage?: boolean;
   /** El negocio respondió desde la app nativa — registrar + pausar, no contestar. */
   ownerEcho?: boolean;
+  /** Rol del eco saliente: `owner` (persona) | `assistant` (bot/automatización). */
+  echoRole?: "owner" | "assistant";
   /** Para responder en el hilo (Telegram grupos). */
   replyToMessageId?: number;
   /** Ubicación compartida por el cliente (pin de WhatsApp) — nicho taxis. */
@@ -557,8 +559,18 @@ export class SupportAgent extends Agent<Env, SupportAgentState> {
       console.log(`[recordOwnerEcho] duplicado ignorado (conv ${conv.id})`);
       return { acknowledged: true };
     }
-    await msgs.append(conv.id, "owner", marker);
+
+    // `assistant` = lo mandó el bot o una automatización (respuesta de comentario,
+    // campaña…). Se registra igual para que el hilo del panel muestre TODO lo
+    // enviado, pero NO es un takeover humano: no pausa el bot.
+    const echoRole: "owner" | "assistant" = payload.echoRole === "assistant" ? "assistant" : "owner";
+    await msgs.append(conv.id, echoRole, marker);
     await convs.touchLastMessage(conv.id);
+
+    if (echoRole === "assistant") {
+      console.log(`[recordOwnerEcho] mensaje del bot/automatización registrado (conv ${conv.id}), sin pausa`);
+      return { acknowledged: true };
+    }
 
     // Un contacto bloqueado se queda bloqueado: registrar su mensaje no cambia
     // la pausa (el bloqueo manda).

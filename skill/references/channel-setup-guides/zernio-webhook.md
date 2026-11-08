@@ -79,8 +79,15 @@ Cada regla hace dos cosas cuando el comentario trae alguna de sus keywords:
 
 1. En Zernio → **Webhooks / Integrations**, crea un webhook con:
    - **URL:** `https://<tu-worker>.workers.dev/webhooks/zernio`
-   - **Eventos:** `message.received` y `comment.received` (reactions opcional)
+   - **Eventos:** `message.received`, **`message.sent`**, `comment.received`
+     (reactions opcional)
    - **Secret:** el mismo `ZERNIO_WEBHOOK_SECRET` del Paso 2
+
+   > **`message.sent` no es opcional.** Es el evento con el que Zernio entrega
+   > TODO lo saliente: lo que el dueño escribe desde la app del celular y lo que
+   > envían el bot y las automatizaciones. Sin él, el hilo del panel solo muestra
+   > lo que entra. Si conectaste antes de que existiera, abre
+   > **panel → Conexiones**: se agrega solo al endpoint ya registrado.
 2. Guarda. Zernio empieza a mandar eventos.
 
 ## Paso 5 — Prueba

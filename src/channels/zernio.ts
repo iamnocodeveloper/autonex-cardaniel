@@ -25,6 +25,7 @@ import { matchKeywords, renderUsername } from "../utils/keyword-matcher";
 import { commentFingerprint } from "../db/fingerprints";
 import { resolveZernioCredentials } from "./zernioCredentials";
 import { extractPostContext, MAX_PUBLIC_REPLIES_PER_DAY } from "./zernioComments";
+import { checkInstagramFollowStatus } from "./zernioAccounts";
 import { toPlainLinks } from "../replies/format";
 
 const DEFAULT_BASE = "https://zernio.com/api";
@@ -68,6 +69,27 @@ interface ZernioMessage {
   sender?: { id?: string; name?: string; username?: string };
   sentAt?: string;
   platformMessageId?: string;
+  /**
+   * Quién produjo el mensaje SALIENTE (`message.sent`): `human` (operador en el
+   * inbox de Zernio), `api` (una llamada a la API — nuestro bot y las
+   * automatizaciones de comentarios), `comment_automation`, `broadcast`,
+   * `sequence`, `workflow`, `bulk-api`, o `null` cuando se envió desde la app
+   * nativa del celular. Ver docs.zernio.com/webhooks/inbox/message-sent.
+   */
+  sentVia?: string | null;
+  /**
+   * Metadatos del mensaje. Cuando el usuario toca un botón, Zernio manda el
+   * payload en `metadata.postbackPayload` (y el texto del botón en
+   * `metadata.postbackTitle`) — NO como texto del mensaje. Ver
+   * docs.zernio.com/webhooks/inbox/message-received (Postback button tap).
+   */
+  metadata?: {
+    postbackPayload?: string;
+    postbackTitle?: string;
+    quickReplyPayload?: string;
+    interactiveId?: string;
+    callbackData?: string;
+  };
 }
 
 interface ZernioComment {
@@ -91,6 +113,12 @@ interface ZernioWebhookBody {
   comment?: ZernioComment;
   /** Publicación comentada (caption/permalink/imagen) — la trae comment.received. */
   post?: Record<string, unknown>;
+}
+
+/** Primer string no vacío de la lista (para payloads que llegan en varias claves). */
+function pickStr(...vals: unknown[]): string | undefined {
+  for (const v of vals) if (typeof v === "string" && v.trim() !== "") return v.trim();
+  return undefined;
 }
 
 function firstUrl(body: { attachments?: { type?: string; url?: string }[] }): { audio?: string; image?: string } {
@@ -208,9 +236,10 @@ async function sendCommentActions(
   commenterId: string | undefined,
   commentText: string | undefined,
   env: Env,
-): Promise<void> {
+  platform = "instagram",
+): Promise<{ dmSent: boolean; publicSent: boolean }> {
   const { apiKey } = await resolveZernioCredentials(env);
-  if (!apiKey) return;
+  if (!apiKey) return { dmSent: false, publicSent: false };
   const base = env.ZERNIO_API_BASE_URL ?? DEFAULT_BASE;
   const headers = {
     Authorization: `Bearer ${apiKey}`,
@@ -276,23 +305,21 @@ async function sendCommentActions(
   // postback (followcheck) en vez del link; cuando toque el botón, el webhook
   // message.received traerá el payload y entregaremos el link (ver autoReplyOnDm).
   let followGated = false;
-  if (!publicOnly && matched.requireFollow && commenterId) {
-    try {
-      const followRes = await fetch(
-        `${base}/v1/accounts/${encodeURIComponent(accountId)}/follow-status/${encodeURIComponent(commenterId)}`,
-        { headers, signal: AbortSignal.timeout(6000) },
-      );
-      if (followRes.ok) {
-        const fj = (await followRes.json()) as { isFollower?: boolean | null };
-        followGated = fj.isFollower !== true; // null/unknown → pedir confirmación
-      } else {
-        console.warn(`[zernio] follow-status falló: ${followRes.status}`);
-        followGated = true; // no sabemos → pedir confirmación (fail-closed)
-      }
-    } catch (e) {
-      console.warn("[zernio] follow-status error:", e);
-      followGated = true;
+  if (!publicOnly && matched.requireFollow && commenterId && platform === "instagram") {
+    const follow = await checkInstagramFollowStatus(env, { accountId, userId: commenterId });
+    // Se pide el follow salvo que Meta CONFIRME que ya sigue. `unknown` es lo
+    // normal en un comentarista que nunca ha escrito (consent_required), así
+    // que ahí SÍ se le pide el follow — para eso existe el gate. La diferencia
+    // está en la confirmación (autoReplyOnDm): ahí "no lo sé" ya no se confunde
+    // con "no me sigue".
+    followGated = follow.status !== "yes";
+    if (follow.status === "unknown") {
+      console.warn(`[zernio] follow-status sin resolver (${follow.reason ?? "sin motivo"}) — se pide follow igual`);
     }
+  } else if (!publicOnly && matched.requireFollow && platform !== "instagram") {
+    // follow-status es solo de Instagram: en Facebook/TikTok no hay forma de
+    // verificar y el gate dejaría al usuario en un bucle imposible de cumplir.
+    console.warn(`[zernio] follow gate omitido en ${platform}: solo se verifica en Instagram`);
   }
 
   // Estados FINALES honestos para el historial: sent = se envió de verdad en
@@ -611,6 +638,8 @@ async function sendCommentActions(
   } catch (e) {
     console.warn("[zernio] no se pudo registrar el log:", e);
   }
+
+  return { dmSent, publicSent };
 }
 
 // El webhook de comment.received trae account.id = id de la PUBLICACIÓN, no el
@@ -878,11 +907,55 @@ async function autoDmOnComment(body: ZernioWebhookBody, env: Env): Promise<void>
     comment.author?.id ?? comment.author?.username ?? "",
     comment.text ?? "",
   );
+  // ¿Esta regla espera una respuesta PÚBLICA? (comment_reply usa `message`;
+  // comment_dm / comment_dm_public usan `replyToComment` o, si falta, una
+  // respuesta generada con `aiReplyPrompt`).
+  const wantsPublic =
+    matched.kind === "comment_reply"
+      ? !!matched.message?.trim()
+      : !!matched.replyToComment?.trim() || !!matched.aiReplyPrompt?.trim();
+  let fpClaimed = true;
   try {
     const { Db } = await import("../db/client");
     const { FingerprintsRepo } = await import("../db/fingerprints");
     const fpRepo = new FingerprintsRepo(new Db(env.DB));
-    if (!(await fpRepo.claim(fp, matched.ruleId ?? "", commentId, Date.now()))) {
+    fpClaimed = await fpRepo.claim(fp, matched.ruleId ?? "", commentId, Date.now());
+  } catch (e) {
+    // Si el claim falla (DB caída), no bloqueamos: los demás controles
+    // (dedup por id, rate limit, tope diario) siguen activos.
+    console.warn("[zernio] claim por huella falló — fail-open:", e);
+  }
+
+  // ── Reentrega con una pata pendiente ─────────────────────────────────────
+  // La huella marca el COMENTARIO, pero una regla tiene DOS patas (DM y
+  // pública) que pueden completarse en momentos distintos. Si la primera
+  // entrega mandó el DM (o el follow prompt) y la pública falló, la huella ya
+  // está tomada y la reentrega se descartaba entera: la respuesta pública no
+  // se reintentaba NUNCA. Aquí se detecta ese caso y se deja pasar; el claim
+  // por pata (`claimLeg` en processed_comments) sigue evitando duplicados.
+  // Id con el que se ejecuta el reintento. En una reentrega Zernio manda un id
+  // nuevo; el estado por pata (y el claim) vive bajo el ORIGINAL, así que hay
+  // que seguir usando el original para no perder el dedup.
+  let effectiveCommentId = commentId;
+  if (!fpClaimed) {
+    let publicPending = false;
+    if (wantsPublic) {
+      try {
+        const { Db } = await import("../db/client");
+        const { DmLogsRepo } = await import("../db/dmLogs");
+        const { FingerprintsRepo } = await import("../db/fingerprints");
+        const db = new Db(env.DB);
+        const original = await new FingerprintsRepo(db).get(fp);
+        if (original?.commentId) effectiveCommentId = original.commentId;
+        const rec = original
+          ? await new DmLogsRepo(db).getProcessedComment(original.commentId)
+          : null;
+        publicPending = !rec || rec.publicReplySentAt == null;
+      } catch {
+        publicPending = false;
+      }
+    }
+    if (!publicPending) {
       console.warn(`[zernio] comentario ya respondido antes (misma huella post+autor+texto) — se omite (${commentId})`);
       try {
         const { Db } = await import("../db/client");
@@ -902,10 +975,7 @@ async function autoDmOnComment(body: ZernioWebhookBody, env: Env): Promise<void>
       }
       return;
     }
-  } catch (e) {
-    // Si el claim por huella falla (DB caída), no bloqueamos: los demás
-    // controles (dedup por id, rate limit, tope diario) siguen activos.
-    console.warn("[zernio] claim por huella falló — fail-open:", e);
+    console.log(`[zernio] reentrega con la respuesta pública pendiente — se reintenta solo esa pata (${commentId})`);
   }
 
   await sendCommentActions(
@@ -915,12 +985,28 @@ async function autoDmOnComment(body: ZernioWebhookBody, env: Env): Promise<void>
     // la exige; el DM usa el inbox resuelto arriba).
     account.accountId ?? accountId,
     postId,
-    commentId,
+    effectiveCommentId,
     comment.author?.username ?? comment.author?.name,
     comment.author?.id,
     comment.text ?? undefined,
     env,
-  );
+    String(account.platform ?? "instagram").toLowerCase(),
+  ).then(async (result) => {
+    // Si NO se envió nada (ni DM ni pública), soltamos el claim por huella:
+    // si no, la siguiente reentrega del mismo comentario se descarta como
+    // "deduplicado" y el comentario se queda sin respuesta para siempre
+    // — aunque la automatización sí lo tenga configurado.
+    if (!result.dmSent && !result.publicSent) {
+      try {
+        const { Db } = await import("../db/client");
+        const { FingerprintsRepo } = await import("../db/fingerprints");
+        await new FingerprintsRepo(new Db(env.DB)).release(fp);
+        console.warn(`[zernio] sin envío para ${commentId} — claim de huella liberado para reintentar`);
+      } catch (e) {
+        console.warn("[zernio] no se pudo liberar el claim de huella:", e);
+      }
+    }
+  });
 }
 
 /**
@@ -933,26 +1019,49 @@ async function autoReplyOnDm(body: ZernioWebhookBody, env: Env): Promise<boolean
   const conv = body.conversation;
   const account = body.account;
   if (!m || !conv?.id || !account?.accountId) return false;
-  // Zernio marca los botones presionados con prefijo "postback_" en
-  // platformMessageId (el payload del botón no viaja en el texto).
-  const isPostback = typeof m.platformMessageId === "string" && m.platformMessageId.startsWith("postback_");
   const text = (m.text ?? "").trim();
-  if (!text && !isPostback) return false;
+
+  // ── Botón presionado ─────────────────────────────────────────────────────
+  // Zernio entrega el tap de un botón en `metadata.postbackPayload` (y su
+  // etiqueta en `metadata.postbackTitle`), NO en `message.text` — que en un tap
+  // suele venir vacío. Antes solo se miraba el texto + el prefijo "postback_"
+  // de platformMessageId, así que en producción el "Ya te sigo" llegaba al
+  // agente (o se descartaba) y el link nunca se entregaba.
+  const meta = m.metadata ?? {};
+  const postbackPayload = pickStr(
+    meta.postbackPayload,
+    meta.quickReplyPayload,
+    meta.callbackData,
+    meta.interactiveId,
+  );
+  // Señal secundaria: Zernio marca el id de mensaje con prefijo "postback_".
+  const isPostback =
+    typeof m.platformMessageId === "string" && m.platformMessageId.startsWith("postback_");
+  if (!text && !postbackPayload && !isPostback) return false;
+  // Texto equivalente a "botón presionado" cuando el payload viaja como texto.
+  const tapText = text || meta.postbackTitle || "";
 
   const apiKey = (await resolveZernioCredentials(env)).apiKey;
   const base = env.ZERNIO_API_BASE_URL ?? DEFAULT_BASE;
   if (!apiKey) return false;
 
-  // ── Postback del follow gate ─────────────────────────────────────────────
-  // Al tocar "Ya te sigo", Zernio NO reenvía el payload followcheck:<rule>:<comment>
-  // (manda el TEXTO del botón + prefijo postback_). El estado se guardó al enviar
-  // el DM de follow gate (tabla follow_gate_pending); lo buscamos por cuenta +
-  // comentarista. El regex sigue como fallback (algunos canales sí envían el
-  // payload como texto).
-  const fgMatch = text.match(/^followcheck:([^:]*):(.*)$/);
+  // ── Confirmación del follow gate ─────────────────────────────────────────
+  // El usuario tocó "Ya te sigo". El payload `followcheck:<ruleId>:<commentId>`
+  // llega en `metadata.postbackPayload`; como respaldo usamos el texto (algunos
+  // canales lo mandan ahí) y la fila pendiente guardada al enviar el DM (Zernio
+  // no siempre reenvía el payload: en ese caso solo manda la etiqueta).
+  const fgMatch = postbackPayload?.match(/^followcheck:([^:]*):(.*)$/) ??
+    text.match(/^followcheck:([^:]*):(.*)$/);
   let fgRuleId = fgMatch ? fgMatch[1] : "";
   let fgCommentId = fgMatch ? fgMatch[2] : "";
-  if (!fgMatch && (isPostback || /ya te sigo|sígueme|sigueme|follow/i.test(text))) {
+  // Solo buscamos el pendiente cuando el tap PARECE el botón de follow. Un
+  // `postbackPayload` cualquiera (ej. un botón "Agendar") NO debe caer aquí:
+  // si hay un pendiente de follow de ese usuario, entregaría el link por error.
+  const looksLikeFollowTap =
+    /ya te sigo|sígueme|sigueme/i.test(tapText) ||
+    /follow/i.test(postbackPayload ?? "") ||
+    (isPostback && !postbackPayload);
+  if (!fgMatch && looksLikeFollowTap) {
     try {
       const { Db } = await import("../db/client");
       // Buscamos por comentarista (no por cuenta): tras reconectar Zernio con
@@ -964,6 +1073,23 @@ async function autoReplyOnDm(body: ZernioWebhookBody, env: Env): Promise<boolean
       if (row) {
         fgRuleId = row.rule_id;
         fgCommentId = row.comment_id ?? "";
+      } else {
+        // Sin pendiente (se perdió en un deploy, falló el INSERT, o el DM salió
+        // desde otra instancia). Antes el tap se descartaba EN SILENCIO y el
+        // usuario se quedaba esperando el recurso para siempre — el síntoma
+        // "le di ya te sigo y no se envió nada". Caemos a la automatización de
+        // follow gate más reciente para poder verificar y responder igual.
+        const fallbackRule = await new Db(env.DB).first<{ id: string }>(
+          `SELECT id FROM auto_rules
+            WHERE is_active = 1 AND require_follow = 1
+              AND kind IN ('comment_dm','comment_dm_public','dm_reply')
+            ORDER BY updated_at DESC LIMIT 1`,
+          [],
+        );
+        if (fallbackRule?.id) {
+          fgRuleId = fallbackRule.id;
+          console.warn(`[zernio] follow tap sin pendiente — se usa la regla ${fallbackRule.id}`);
+        }
       }
     } catch (e) {
       console.warn("[zernio] follow-gate pending lookup:", e);
@@ -978,50 +1104,81 @@ async function autoReplyOnDm(body: ZernioWebhookBody, env: Env): Promise<boolean
       const rule = await new AutoRulesRepo(new Db(env.DB)).get(ruleId);
       if (!rule) return true; // regla borrada → ack
 
-      // Verificar follow actual del que tocó el botón.
-      let isFollower = false;
-      try {
-        const fr = await fetch(
-          `${base}/v1/accounts/${encodeURIComponent(account.accountId)}/follow-status/${encodeURIComponent(m.sender?.id ?? "")}`,
-          { headers: { Authorization: `Bearer ${apiKey}` }, signal: AbortSignal.timeout(6000) },
-        );
-        if (fr.ok) {
-          const fj = (await fr.json()) as { isFollower?: boolean | null };
-          isFollower = fj.isFollower === true;
-        }
-      } catch (e) {
-        console.warn("[zernio] followcheck re-check error:", e);
-      }
+      // Verificar el follow AHORA. `refresh=true` salta la caché de Zernio: sin
+      // eso, un follow de hace un minuto se lee como "no" y el bot vuelve a
+      // pedirlo a alguien que ya siguió.
+      const follow = await checkInstagramFollowStatus(env, {
+        accountId: account.accountId,
+        userId: m.sender?.id,
+        refresh: true,
+      });
 
-      // Limpiar el pendiente del follow gate (ya se procesó: entregamos o re-pedimos).
-      try {
-        const { Db } = await import("../db/client");
-        await new Db(env.DB).run(
-          `DELETE FROM follow_gate_pending WHERE commenter_id = ?`,
-          [m.sender?.id ?? ""],
-        );
-      } catch { /* best-effort */ }
-
-      if (!isFollower) {
-        // Aún no sigue → re-pedir con el mismo botón, sin saludar de nuevo.
-        const prompt = toPlainLinks(
-          renderUsername(
-            rule.followPromptMessage || "Oh, {username}, aún no me sigues 🙏 Sígueme y vuelve a tocar el botón para recibir el link 👇",
-            m.sender?.name ?? m.sender?.username,
-          ),
-        );
-        const followBtn = [
-          { type: "postback", title: (rule.followButtonLabel || "Ya te sigo").slice(0, 20), payload: `followcheck:${ruleId}:${fgCommentId}` },
-        ];
-        await fetch(`${base}/v1/inbox/conversations/${encodeURIComponent(conv.id)}/messages`, {
+      const convId = conv.id;
+      const dmAccountId = account.accountId;
+      const sendDm = (payload: Record<string, unknown>) =>
+        fetch(`${base}/v1/inbox/conversations/${encodeURIComponent(convId)}/messages`, {
           method: "POST",
           headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ accountId: account.accountId, message: prompt, buttons: followBtn }),
+          body: JSON.stringify({ accountId: dmAccountId, ...payload }),
         });
+      const followBtn = [
+        {
+          type: "postback",
+          title: (rule.followButtonLabel || "Ya te sigo").slice(0, 20),
+          payload: `followcheck:${ruleId}:${fgCommentId}`,
+        },
+      ];
+
+      // ── No sigue (o no se pudo verificar) → se le dice claramente ────────
+      // `unknown` NO se trata como `no` a secas: si Meta no puede resolverlo
+      // (nunca le ha escrito, DM desactivado, etc.) avisamos que aún no lo
+      // vemos como seguidor y dejamos el botón para reintentar. Así el usuario
+      // nunca se queda esperando un link que no llega.
+      if (follow.status !== "yes") {
+        // Mensaje configurable en el panel (Automatizaciones → follow gate).
+        // IMPORTANTE: no reusamos `rule.followPromptMessage` — ese es el texto
+        // con el que se le PIDIÓ seguir al principio. Aquí el usuario ya tocó
+        // "Ya te sigo", así que hay que decirle claramente que todavía no se le
+        // ve como seguidor.
+        let configured = "";
+        try {
+          const { SettingsRepo, SETTING_KEYS } = await import("../db/settings");
+          configured = (await new SettingsRepo(new Db(env.DB)).get(SETTING_KEYS.followGateNotFollowingMessage)) ?? "";
+        } catch {
+          /* sin settings → default */
+        }
+        const baseText = configured.trim() || "Todavía no me apareces como seguidor 🙏";
+        const notFollowing =
+          follow.status === "no"
+            ? `${baseText} Sígueme y toca el botón otra vez para recibir el link 👇`
+            : `${baseText} Si ya me sigues, espera unos segundos y vuelve a tocar el botón 👇`;
+        await sendDm({
+          message: toPlainLinks(renderUsername(notFollowing, m.sender?.name ?? m.sender?.username)),
+          buttons: followBtn,
+        });
+        // El pendiente NO se borra: el usuario puede tocar el botón de nuevo.
+        try {
+          const { DmLogsRepo } = await import("../db/dmLogs");
+          await new DmLogsRepo(new Db(env.DB)).log({
+            ruleId,
+            kind: "comment_dm",
+            platform: account.platform,
+            target: fgCommentId || conv.id,
+            username: m.sender?.name ?? m.sender?.username,
+            message: notFollowing,
+            status: "skipped",
+            error:
+              follow.status === "no"
+                ? "Follow gate: el usuario confirmó pero todavía no sigue la cuenta."
+                : `Follow gate: no se pudo verificar el follow (${follow.reason ?? "sin motivo"}). Se le pidió reintentar.`,
+          });
+        } catch (e) {
+          console.warn("[zernio] followcheck log error:", e);
+        }
         return true;
       }
 
-      // Ya sigue → entregar el link (mensaje real + botón trackeado).
+      // ── Sí sigue → entregar el recurso ───────────────────────────────────
       let buttonUrl = rule.buttonUrl;
       if (buttonUrl && ruleId) {
         try {
@@ -1038,11 +1195,16 @@ async function autoReplyOnDm(body: ZernioWebhookBody, env: Env): Promise<boolean
         buttons.push({ type: "url", title: (rule.buttonLabel || "Abrir").slice(0, 20), url: buttonUrl });
       }
       const dm = toPlainLinks(renderUsername(rule.message, m.sender?.name ?? m.sender?.username));
-      await fetch(`${base}/v1/inbox/conversations/${encodeURIComponent(conv.id)}/messages`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ accountId: account.accountId, message: dm, buttons: buttons.length ? buttons : undefined }),
-      });
+      await sendDm({ message: dm, buttons: buttons.length ? buttons : undefined });
+
+      // Ya se cumplió el objetivo: limpiamos el pendiente.
+      try {
+        await new Db(env.DB).run(`DELETE FROM follow_gate_pending WHERE commenter_id = ?`, [
+          m.sender?.id ?? "",
+        ]);
+      } catch {
+        /* best-effort */
+      }
 
       // Registrar la entrega tras el follow gate.
       try {
@@ -1174,7 +1336,7 @@ export async function parseZernioEvents(body: unknown, env: Env): Promise<Incomi
   const b = (body ?? {}) as ZernioWebhookBody;
   const event = b.event ?? "";
 
-  if (event === "message.received") {
+  if (event === "message.received" || event === "message.sent") {
     const m = b.message;
     const conv = b.conversation;
     const account = b.account;
@@ -1183,20 +1345,47 @@ export async function parseZernioEvents(body: unknown, env: Env): Promise<Incomi
     const accountId = account?.accountId;
     if (!convId || !accountId) return [];
 
-    // Mensaje SALIENTE: el negocio respondió al cliente desde la app nativa
-    // (Instagram/Messenger/WhatsApp) u otra herramienta — o es el eco de lo que
-    // el propio bot envió (se de-duplica en recordOwnerEcho). Se registra en el
-    // hilo como `owner` y pausa el bot; NO entra al agente.
-    if (m.direction === "outgoing") {
-      if (!m.text) return [];
-      console.log("[zernio] msg saliente (owner echo):", JSON.stringify({ platform: account.platform }));
+    // ── Mensaje SALIENTE ──────────────────────────────────────────────────
+    // Zernio entrega TODO lo saliente por `message.sent`: lo que el dueño
+    // escribe desde la app nativa del celular, lo que manda el bot y lo que
+    // mandan las automatizaciones (respuestas de comentario, campañas,
+    // secuencias). Antes solo se procesaba `message.received` con
+    // direction=outgoing, que NO es el evento con el que Zernio manda los
+    // salientes → el hilo del panel se quedaba sin lo enviado.
+    //
+    // `sentVia` dice quién lo produjo:
+    //   null (o ausente) → app nativa del celular / respuesta manual
+    //   human            → operador en el inbox de Zernio
+    //   api / comment_automation / workflow / sequence / broadcast / bulk-api
+    //                    → lo mandó el bot o una automatización
+    if (m.direction === "outgoing" || event === "message.sent") {
+      const { audio, image } = firstUrl(m);
+      const marker = (m.text ?? "").trim();
+      // Un saliente puede ser solo media (el dueño manda una foto desde el
+      // celular): antes se descartaba por no tener texto.
+      if (!marker && !image && !audio) return [];
+      const via = (m.sentVia ?? "").toLowerCase();
+      const byBot =
+        via === "api" ||
+        via === "comment_automation" ||
+        via === "workflow" ||
+        via === "sequence" ||
+        via === "broadcast" ||
+        via === "bulk-api";
+      console.log(
+        "[zernio] msg saliente:",
+        JSON.stringify({ platform: account.platform, sentVia: m.sentVia ?? null, byBot }),
+      );
       return [
         {
           channel: "zernio" as ChannelId,
           channelUserId: `${accountId}:${convId}`,
           displayName: conv?.participantName,
-          text: m.text,
+          text: marker || undefined,
+          imageUrl: image,
+          audioUrl: audio,
           ownerEcho: true,
+          echoRole: byBot ? ("assistant" as const) : ("owner" as const),
           isOwnerMessage: false,
           receivedAt: Date.now(),
           rawPayload: b,

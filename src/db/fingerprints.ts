@@ -56,4 +56,28 @@ export class FingerprintsRepo {
     );
     return res.meta?.changes === 1;
   }
+
+  /**
+   * Lee el registro de una huella: qué comment_id la tomó y cuándo. Sirve para
+   * decidir si una reentrega puede completar una pata pendiente usando el id
+   * ORIGINAL (el que tiene el estado en `processed_comments`), no el id nuevo
+   * que Zernio inventó en la reentrega.
+   */
+  async get(dedupKey: string): Promise<{ ruleId: string; commentId: string; createdAt: number } | null> {
+    const row = await this.db.first<{ rule_id: string; comment_id: string; created_at: number }>(
+      "SELECT rule_id, comment_id, created_at FROM comment_fingerprints WHERE dedup_key = ?",
+      [dedupKey],
+    );
+    return row ? { ruleId: row.rule_id, commentId: row.comment_id, createdAt: row.created_at } : null;
+  }
+
+  /**
+   * Suelta un claim cuando NO se envió nada (falló el DM, la API rechazó, se
+   * agotó un límite…). Sin esto el claim queda tomado para siempre y CUALQUIER
+   * reentrega posterior del mismo comentario se descarta como "deduplicado":
+   * el comentario nunca recibe respuesta aunque la automatización la tenga.
+   */
+  async release(dedupKey: string): Promise<void> {
+    await this.db.run("DELETE FROM comment_fingerprints WHERE dedup_key = ?", [dedupKey]);
+  }
 }
