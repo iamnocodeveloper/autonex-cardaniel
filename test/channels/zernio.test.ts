@@ -1289,3 +1289,123 @@ describe("huella: reentrega con la respuesta pública pendiente", () => {
     expect(publicAttempts).toBe(2);
   });
 });
+
+describe("comment_dm_public: la respuesta pública no puede quedarse sin enviar", () => {
+  it("comment_dm_public SIN texto público: igual responde en público (no solo el DM)", async () => {
+    // Bug real: la regla se creó como "Comentario → respuesta pública + DM" pero
+    // sin `reply_to_comment`. El bot mandaba solo el DM y el comentario quedaba
+    // sin responder en público, en silencio.
+    const fetchMock = vi.fn(async (url: string) => {
+      if (String(url).includes("/v1/accounts")) {
+        return new Response(
+          JSON.stringify({ accounts: [{ _id: "acct_1", platform: "instagram", username: "mi_negocio" }] }),
+          { status: 200 },
+        );
+      }
+      return new Response(JSON.stringify({ ok: true }), { status: 200 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const env = {
+      ZERNIO_API_KEY: "zkey_test",
+      DB: makeDbStub({
+        id: "rule_sinpub",
+        kind: "comment_dm_public",
+        platform: "instagram",
+        keywords: JSON.stringify(["correo"]),
+        message: "¡Aquí lo tienes! 👇 Mailflare",
+        button_label: "Abrir",
+        button_url: "https://github.com/hieunc229/mailflare",
+        reply_to_comment: null, // ← el problema
+        ai_reply_prompt: null,
+        is_active: 1,
+        whole_word_match: 1,
+        require_follow: 0,
+        follow_prompt_message: null,
+        follow_button_label: null,
+        created_at: Date.now(),
+        updated_at: Date.now(),
+      }),
+      DASHBOARD_BASE_URL: "https://kooni.app",
+    } as unknown as Env;
+
+    await parseZernioEvents(
+      {
+        event: "comment.received",
+        comment: {
+          id: "cm_sinpub",
+          postId: "post_1",
+          platformPostId: "pp_1",
+          text: "correo",
+          author: { id: "usr_sp", username: "moisesflorez0820" },
+        },
+        account: { id: "acct_1", accountId: "acct_1", platform: "instagram", username: "mi_negocio" },
+      },
+      env,
+    );
+
+    const calls = fetchMock.mock.calls as unknown as [string, RequestInit][];
+    // DM sí
+    expect(calls.find((c) => String(c[0]).includes("/private-reply"))).toBeTruthy();
+    // Y respuesta pública TAMBIÉN (antes no se enviaba).
+    const pub = calls.find((c) => /\/v1\/inbox\/comments\/post_1$/.test(String(c[0])));
+    expect(pub).toBeTruthy();
+    const pubBody = JSON.parse((pub![1] as RequestInit).body as string);
+    expect(pubBody.message.length).toBeGreaterThan(0);
+    expect(pubBody.commentId).toBe("cm_sinpub");
+  });
+
+  it("comment_dm_public CON texto público: usa el texto del dueño", async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      if (String(url).includes("/v1/accounts")) {
+        return new Response(
+          JSON.stringify({ accounts: [{ _id: "acct_1", platform: "instagram", username: "mi_negocio" }] }),
+          { status: 200 },
+        );
+      }
+      return new Response(JSON.stringify({ ok: true }), { status: 200 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const env = {
+      ZERNIO_API_KEY: "zkey_test",
+      DB: makeDbStub({
+        id: "rule_conpub",
+        kind: "comment_dm_public",
+        platform: "instagram",
+        keywords: JSON.stringify(["correo"]),
+        message: "¡Aquí lo tienes!",
+        button_label: null,
+        button_url: null,
+        reply_to_comment: "¡Te lo mandé por privado! ✨",
+        ai_reply_prompt: null,
+        is_active: 1,
+        whole_word_match: 1,
+        require_follow: 0,
+        follow_prompt_message: null,
+        follow_button_label: null,
+        created_at: Date.now(),
+        updated_at: Date.now(),
+      }),
+      DASHBOARD_BASE_URL: "https://kooni.app",
+    } as unknown as Env;
+
+    await parseZernioEvents(
+      {
+        event: "comment.received",
+        comment: {
+          id: "cm_conpub",
+          postId: "post_1",
+          platformPostId: "pp_1",
+          text: "correo",
+          author: { id: "usr_cp", username: "pepe" },
+        },
+        account: { id: "acct_1", accountId: "acct_1", platform: "instagram", username: "mi_negocio" },
+      },
+      env,
+    );
+
+    const calls = fetchMock.mock.calls as unknown as [string, RequestInit][];
+    const pub = calls.find((c) => /\/v1\/inbox\/comments\/post_1$/.test(String(c[0])));
+    const pubBody = JSON.parse((pub![1] as RequestInit).body as string);
+    expect(pubBody.message).toBe("¡Te lo mandé por privado! ✨");
+  });
+});

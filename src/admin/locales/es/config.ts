@@ -619,6 +619,8 @@ export const configEs = {
     "Todavía no me apareces como seguidor 🙏 Sígueme y toca el botón otra vez para recibir el link 👇",
   "auto.followGate.notFollowingHelp":
     "Se le manda a quien tocó “Ya te sigo” pero la verificación dice que aún no te sigue (o no se pudo comprobar). Vacío = se usa el mensaje de follow de la regla. El botón de confirmación se agrega solo.",
+  "auto.missingPublic":
+    "Falta la respuesta pública: este tipo responde en público + DM, pero sin ese texto solo se manda el DM. Edita la regla y escríbela.",
   "auto.empty":
     "Aún no hay automatizaciones. Crea la primera con el formulario de abajo.",
   "auto.editTitle": "✏️ Editar automatización",

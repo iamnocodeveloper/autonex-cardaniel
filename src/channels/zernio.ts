@@ -30,6 +30,13 @@ import { toPlainLinks } from "../replies/format";
 
 const DEFAULT_BASE = "https://zernio.com/api";
 
+/**
+ * Respuesta pública por defecto cuando una regla `comment_dm_public` no tiene
+ * texto público configurado. Evita que la regla "comentario → pública + DM"
+ * termine mandando solo el DM.
+ */
+const DEFAULT_PUBLIC_REPLY = "¡Gracias por tu comentario! Te escribí por privado ✨";
+
 // ─── Firma del webhook ───────────────────────────────────────────────────────
 // Zernio firma el body crudo con HMAC-SHA256 y manda el digest hex en
 // X-Zernio-Signature (legacy: X-Late-Signature). Comparación en tiempo
@@ -297,6 +304,30 @@ async function sendCommentActions(
     } catch (e) {
       console.warn("[zernio] generación IA de respuesta pública falló:", e);
     }
+  }
+
+  // ── `comment_dm_public` sin texto público: usar un default ───────────────
+  // Este tipo de regla se llama "Comentario → respuesta pública + DM" en el
+  // panel, pero la respuesta pública sale de `reply_to_comment`. Si el dueño lo
+  // dejó vacío (y no hay prompt de IA), el bot mandaba SOLO el DM y el
+  // comentario se quedaba sin responder en público — en silencio, sin avisar.
+  // Ahora se usa un texto genérico para que la regla cumpla lo que promete; el
+  // dueño puede cambiarlo en Automatizaciones.
+  if (!publicReply && kind === "comment_dm_public") {
+    let fallback = "";
+    try {
+      const { Db } = await import("../db/client");
+      const { SettingsRepo, SETTING_KEYS } = await import("../db/settings");
+      fallback =
+        (await new SettingsRepo(new Db(env.DB)).get(SETTING_KEYS.commentDefaultPublicReply)) ?? "";
+    } catch {
+      /* sin settings → default */
+    }
+    const text = fallback.trim() || DEFAULT_PUBLIC_REPLY;
+    publicReply = toPlainLinks(renderUsername(text, commenterName));
+    console.warn(
+      `[zernio] regla ${matched.ruleId ?? "?"} es comment_dm_public sin texto público — se usa el default`,
+    );
   }
 
   // ── Follow gate (port OpenReply) ──────────────────────────────────────────
@@ -580,9 +611,15 @@ async function sendCommentActions(
     }
   }
 
-  // Registrar el resultado: dedup + log de automatización (estados honestos).
-  try {
-    if (dmSent || publicSent) {
+  // ── Registro del resultado ────────────────────────────────────────────────
+  // Cada escritura va en su PROPIO try/catch. Antes todo el bloque estaba bajo
+  // un único try: si `recordProcessedComment` o un `log()` fallaban, se saltaba
+  // en silencio la actualización de la tabla `comments` — y el panel mostraba el
+  // comentario como "sin automatización / sin DM / sin respuesta pública"
+  // aunque el envío hubiera ocurrido. Separarlos hace que un fallo no borre la
+  // evidencia de los demás.
+  if (dmSent || publicSent) {
+    try {
       await logs?.recordProcessedComment({
         commentId,
         ruleId: matched.ruleId ?? "",
@@ -592,10 +629,15 @@ async function sendCommentActions(
         publicReplySentAt: publicSent ? Date.now() : undefined,
         error: dmError ?? publicError,
       });
+    } catch (e) {
+      console.warn("[zernio] no se pudo marcar el comentario como procesado:", e);
     }
-    // Un log por pierna para que el historial no mienta: cada intento de DM y de
-    // respuesta pública queda con su propio estado (sent/skipped/failed).
-    if (dmSent || dmSkipped || dmError) {
+  }
+
+  // Un log por pierna para que el historial no mienta: cada intento de DM y de
+  // respuesta pública queda con su propio estado (sent/skipped/failed).
+  if (dmSent || dmSkipped || dmError) {
+    try {
       await logs?.log({
         ruleId: matched.ruleId,
         kind: "comment_dm",
@@ -606,8 +648,12 @@ async function sendCommentActions(
         status: dmSent ? "sent" : dmError ? "failed" : "skipped",
         error: dmError,
       });
+    } catch (e) {
+      console.warn("[zernio] no se pudo registrar el log del DM:", e);
     }
-    if (publicReply && (publicSent || publicSkipped || publicError)) {
+  }
+  if (publicReply && (publicSent || publicSkipped || publicError)) {
+    try {
       await logs?.log({
         ruleId: matched.ruleId,
         kind: "comment_reply",
@@ -618,25 +664,25 @@ async function sendCommentActions(
         status: publicSent ? "sent" : publicError ? "failed" : "skipped",
         error: publicError,
       });
-    }
-
-    // Actualizar el comentario registrado (pestaña Comentarios): qué regla
-    // disparó y si el DM / respuesta pública se enviaron.
-    try {
-      const { Db } = await import("../db/client");
-      const { CommentsRepo } = await import("../db/comments");
-      await new CommentsRepo(new Db(env.DB)).upsert({
-        id: commentId,
-        ruleId: matched.ruleId,
-        dmSent,
-        publicReplySent: publicSent,
-        publicReplyText: publicReply,
-      });
     } catch (e) {
-      console.warn("[zernio] no se pudo actualizar el comentario:", e);
+      console.warn("[zernio] no se pudo registrar el log de la respuesta pública:", e);
     }
+  }
+
+  // Actualizar el comentario registrado (pestaña Comentarios): qué regla
+  // disparó y si el DM / respuesta pública se enviaron.
+  try {
+    const { Db } = await import("../db/client");
+    const { CommentsRepo } = await import("../db/comments");
+    await new CommentsRepo(new Db(env.DB)).upsert({
+      id: commentId,
+      ruleId: matched.ruleId,
+      dmSent,
+      publicReplySent: publicSent,
+      publicReplyText: publicReply,
+    });
   } catch (e) {
-    console.warn("[zernio] no se pudo registrar el log:", e);
+    console.warn("[zernio] no se pudo actualizar el comentario:", e);
   }
 
   return { dmSent, publicSent };

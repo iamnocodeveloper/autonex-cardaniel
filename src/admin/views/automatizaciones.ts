@@ -50,6 +50,12 @@ const INPUT_STYLE =
 function ruleCard(t: T, rule: AutoRule, clicks: number): string {
   const labels = kindLabels(t);
   const kind = labels[rule.kind] ?? labels.comment_dm;
+  // Una regla `comment_dm_public` promete respuesta pública + DM. Si no tiene
+  // texto público (ni respuesta de IA), el bot mandaba solo el DM y el
+  // comentario quedaba sin responder — sin ningún aviso. Lo marcamos para que
+  // el dueño lo vea y lo complete.
+  const warnMissingPublic =
+    rule.kind === "comment_dm_public" && !rule.replyToComment?.trim() && !rule.aiReplyPrompt?.trim();
   const platform = platforms(t).find((p) => p.value === rule.platform)?.label ?? rule.platform;
   const keywords = rule.keywords.map(esc).join(", ");
   const chip = (label: string, accent: boolean): string =>
@@ -78,6 +84,7 @@ function ruleCard(t: T, rule: AutoRule, clicks: number): string {
       <div class="text-[12px]" style="color:var(--cream);border-left:2px solid var(--accent);padding-left:10px;margin-top:2px">${esc(rule.message)}</div>
       ${clicks > 0 ? `<div class="text-[11px] font-mono" style="color:var(--accent2)">${t(clicks === 1 ? "auto.clicks.one" : "auto.clicks.many", { n: clicks })}</div>` : ""}
       ${rule.replyToComment ? `<div class="text-[11.5px]" style="color:var(--muted)">${t("auto.replyPublic")} <span style="color:var(--cream)">${esc(rule.replyToComment)}</span></div>` : ""}
+      ${warnMissingPublic ? `<div class="text-[11.5px]" style="color:var(--warn, #fbbf24);border:1px solid var(--warn, #fbbf24);padding:6px 9px;background:rgba(251,191,36,.06)">⚠ ${t("auto.missingPublic")}</div>` : ""}
       ${rule.requireFollow ? `<div class="text-[11.5px]" style="color:var(--accent2)">${t("auto.followGate")}</div>` : ""}
       ${rule.buttonLabel ? `<div class="text-[11.5px]" style="color:var(--muted)">🔘 <span class="font-mono">${esc(rule.buttonLabel)}</span> → ${esc(rule.buttonUrl ?? "")}</div>` : ""}
       <form id="toggle-${esc(rule.id)}" method="POST" action="/admin/automatizaciones/${esc(rule.id)}/toggle" style="display:none"></form>

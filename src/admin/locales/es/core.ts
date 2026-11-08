@@ -157,6 +157,8 @@ export const es = {
 
   // Automatizaciones
   "msg.automationsKeywordsRequired": "keywords y mensaje son obligatorios",
+  "msg.automationsPublicRequired":
+    "Este tipo responde en público + DM: escribe la respuesta pública (o un prompt de IA). Si no, el comentario se quedaría sin responder.",
   "msg.automationsLimit": "Límite gratis de reglas alcanzado ({used}/{limit}). Activa Pro en Licencia para quitarlo.",
   "msg.automationsRuleNotFound": "regla no encontrada",
 

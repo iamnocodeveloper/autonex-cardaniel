@@ -154,6 +154,9 @@ export const SETTING_KEYS = {
   // dice que todavía NO sigue. Vacío = texto por defecto del bot. Se le agrega
   // automáticamente la instrucción de tocar el botón otra vez.
   followGateNotFollowingMessage: "follow_gate_not_following_message",
+  // Respuesta pública por defecto para reglas `comment_dm_public` que no tienen
+  // texto público configurado. Vacío = texto genérico del bot.
+  commentDefaultPublicReply: "comment_default_public_reply",
   // Cuántos autos muestra el bot por consulta de inventario (clamp 1..50).
   inventoryPageSize: "inventory_page_size", // default 25
   // Idioma del PANEL (interfaz del dueño): "es" | "en". No afecta el idioma con
@@ -299,6 +302,7 @@ export const SETTING_LABELS: Record<string, string> = {
   [SETTING_KEYS.commentAiFallbackEnabled]: "Respuesta con IA a comentarios sin regla",
   [SETTING_KEYS.commentAiFallbackPrompt]: "Instrucciones para la respuesta con IA a comentarios",
   [SETTING_KEYS.followGateNotFollowingMessage]: "Follow gate: mensaje si aún no sigue",
+  [SETTING_KEYS.commentDefaultPublicReply]: "Respuesta pública por defecto (reglas sin texto público)",
   [SETTING_KEYS.inventoryPageSize]: "Autos por consulta de inventario (bot)",
   [SETTING_KEYS.panelLanguage]: "Idioma del panel del bot (es | en)",
   [SETTING_KEYS.webSyncEnabled]: "Web Sync activado",

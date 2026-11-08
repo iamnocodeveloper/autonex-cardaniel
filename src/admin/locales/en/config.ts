@@ -617,6 +617,8 @@ export const configEn: Record<keyof typeof configEs, string> = {
     "I still don't see you as a follower 🙏 Follow me and tap the button again to get the link 👇",
   "auto.followGate.notFollowingHelp":
     "Sent to whoever tapped “I follow you now” but verification says they still don't follow you (or it couldn't be checked). Empty = the rule's follow message is used. The confirm button is added automatically.",
+  "auto.missingPublic":
+    "The public reply is missing: this type replies publicly + DMs, but without that text only the DM is sent. Edit the rule and write it.",
   "auto.empty":
     "There are no automations yet. Create the first one with the form below.",
   "auto.editTitle": "✏️ Edit automation",

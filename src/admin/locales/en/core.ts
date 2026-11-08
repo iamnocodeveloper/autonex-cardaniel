@@ -147,6 +147,8 @@ export const en: Record<keyof typeof es, string> = {
 
   // Automations
   "msg.automationsKeywordsRequired": "keywords and message are required",
+  "msg.automationsPublicRequired":
+    "This type replies publicly + DMs: write the public reply (or an AI prompt). Otherwise the comment would go unanswered.",
   "msg.automationsLimit": "Free rule limit reached ({used}/{limit}). Activate Pro in License to remove it.",
   "msg.automationsRuleNotFound": "rule not found",
 

@@ -2398,6 +2398,14 @@ adminApp.post("/automatizaciones/save", async (c) => {
     if (input.keywords.length === 0 || !input.message) {
       return c.redirect("/admin/automatizaciones?error=" + encodeURIComponent(t("msg.automationsKeywordsRequired")));
     }
+    // `comment_dm_public` promete DOS cosas: respuesta pública y DM. Sin texto
+    // público (ni prompt de IA) la regla mandaba solo el DM y el comentario
+    // quedaba sin responder en público — el bug que reportó el dueño.
+    if (input.kind === "comment_dm_public" && !input.replyToComment && !input.aiReplyPrompt) {
+      return c.redirect(
+        "/admin/automatizaciones?error=" + encodeURIComponent(t("msg.automationsPublicRequired")),
+      );
+    }
     const { Db } = await import("../db/client");
     const { checkLimit } = await import("../limits");
     const limitCheck = await checkLimit(c.env, "rules");
@@ -2436,6 +2444,12 @@ adminApp.post("/automatizaciones/:id/save", async (c) => {
     const input = parseRuleForm(form);
     if (input.keywords.length === 0 || !input.message) {
       return c.redirect("/admin/automatizaciones?error=" + encodeURIComponent(t("msg.automationsKeywordsRequired")));
+    }
+    // Misma regla que al crear: comment_dm_public necesita texto público.
+    if (input.kind === "comment_dm_public" && !input.replyToComment && !input.aiReplyPrompt) {
+      return c.redirect(
+        "/admin/automatizaciones?error=" + encodeURIComponent(t("msg.automationsPublicRequired")),
+      );
     }
     const { Db } = await import("../db/client");
     const repo = new AutoRulesRepo(new Db(c.env.DB));
