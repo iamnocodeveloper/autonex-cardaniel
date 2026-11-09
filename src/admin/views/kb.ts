@@ -86,7 +86,7 @@ export async function renderKbList(
         <p class="text-muted text-[12.5px]" style="margin-top:2px">${t("kb.head.subtitle")}</p>
       </div>
       <a href="/admin/kb/new" class="bigbtn font-display font-bold text-[12.5px] cursor-pointer"
-         style="margin-left:auto;background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);box-shadow:3px 3px 0 var(--linelit);padding:9px 16px;display:flex;align-items:center;gap:8px;white-space:nowrap">
+         style="margin-left:auto;background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);box-shadow:var(--shadow);padding:9px 16px;display:flex;align-items:center;gap:8px;white-space:nowrap">
         <i data-lucide="plus" width="14" height="14"></i> ${t("kb.doc.new")}
       </a>
     </div>
@@ -204,7 +204,7 @@ export async function renderKbEditor(doc: KbDoc | null, env: Env): Promise<strin
 
       <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px">
         <button type="submit" class="bigbtn font-display font-bold text-[12.5px] cursor-pointer"
-                style="background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);box-shadow:4px 4px 0 var(--linelit);padding:11px 20px">${t("kb.editor.save")}</button>
+                style="background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);box-shadow:var(--shadow);padding:11px 20px">${t("kb.editor.save")}</button>
         ${isNew ? "" : `
         <details style="margin-left:auto">
           <summary class="text-bad text-[12px]" style="cursor:pointer;list-style:none">${t("kb.editor.delete")}</summary>

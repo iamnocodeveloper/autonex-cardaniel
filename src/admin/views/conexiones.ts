@@ -485,7 +485,7 @@ export async function renderConexiones(
         ? `<form method="POST" action="/admin/config" style="margin-top:4px;display:flex;gap:8px;align-items:center">
              <input type="hidden" name="channel_pause" value="${esc(ch.id)}">
              <input type="hidden" name="channel_paused" value="${isPaused ? "0" : "1"}">
-             <button type="submit" class="text-[11px]" style="border:1px solid ${isPaused ? "var(--bad)" : "var(--line)"};color:${isPaused ? "var(--bad)" : "var(--muted)"};padding:5px 11px;cursor:pointer;background:${isPaused ? "rgba(248,113,113,.07)" : "none"}">
+             <button type="submit" class="text-[11px]" style="border:1px solid ${isPaused ? "var(--bad)" : "var(--line)"};color:${isPaused ? "var(--bad)" : "var(--muted)"};padding:5px 11px;cursor:pointer;background:${isPaused ? "var(--bad-soft)" : "none"}">
                ${isPaused ? t("cx.resume") : t("cx.pause")}
              </button>
              ${isPaused ? `<span class="text-[10.5px]" style="color:var(--bad)">${t("cx.pausedNote")}</span>` : ""}
@@ -627,7 +627,7 @@ export async function renderConexiones(
           <input type="checkbox" name="make_active" value="1" ${voiceCfg.provider === "vapi" ? "checked" : ""}> ${t("cx.vapi.useActive")}
         </label>
         <div style="display:flex;gap:12px;align-items:center">
-          <button type="submit" class="font-display font-semibold text-[12px]" style="background:var(--accent);color:#0b0b0b;border:none;padding:9px 16px;cursor:pointer">${t("cx.vapi.save")}</button>
+          <button type="submit" class="font-display font-semibold text-[12px]" style="background:var(--accent);color:var(--on-accent);border:none;padding:9px 16px;cursor:pointer">${t("cx.vapi.save")}</button>
           ${vapiOk ? `<label class="text-dim text-[11.5px]" style="display:flex;align-items:center;gap:7px;cursor:pointer"><input type="checkbox" name="clear" value="1"> ${t("cx.clear")}</label>` : ""}
         </div>
       </form>
@@ -651,7 +651,7 @@ export async function renderConexiones(
           <input type="checkbox" name="make_active" value="1" ${voiceCfg.provider === "retell" ? "checked" : ""}> ${t("cx.retell.useActive")}
         </label>
         <div style="display:flex;gap:12px;align-items:center">
-          <button type="submit" class="font-display font-semibold text-[12px]" style="background:var(--accent);color:#0b0b0b;border:none;padding:9px 16px;cursor:pointer">${t("cx.retell.save")}</button>
+          <button type="submit" class="font-display font-semibold text-[12px]" style="background:var(--accent);color:var(--on-accent);border:none;padding:9px 16px;cursor:pointer">${t("cx.retell.save")}</button>
           ${retellOk ? `<label class="text-dim text-[11.5px]" style="display:flex;align-items:center;gap:7px;cursor:pointer"><input type="checkbox" name="clear" value="1"> ${t("cx.clear")}</label>` : ""}
         </div>
       </form>
@@ -663,7 +663,7 @@ export async function renderConexiones(
       <form method="POST" action="/admin/conexiones/voz" style="display:flex;flex-direction:column;gap:10px">
         ${vField(t("cx.voz.objectiveLabel"), `<textarea name="cobros_voice_objective" rows="3" style="${voiceInputStyle};resize:vertical" placeholder="${t("cx.voz.objectivePh")}">${esc(voiceCfg.objective)}</textarea>`, t("cx.voz.objectiveHint"))}
         ${vField(t("cx.voz.attemptsLabel"), `<input type="number" name="cobros_voice_max_attempts" min="1" max="10" value="${voiceCfg.maxAttempts}" style="${voiceInputStyle}">`)}
-        <button type="submit" class="font-display font-semibold text-[12px]" style="background:var(--accent);color:#0b0b0b;border:none;padding:9px 16px;cursor:pointer;align-self:flex-start">${t("cx.voz.save")}</button>
+        <button type="submit" class="font-display font-semibold text-[12px]" style="background:var(--accent);color:var(--on-accent);border:none;padding:9px 16px;cursor:pointer;align-self:flex-start">${t("cx.voz.save")}</button>
       </form>
     </div>`;
 

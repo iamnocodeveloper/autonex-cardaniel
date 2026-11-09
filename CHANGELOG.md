@@ -11,6 +11,43 @@ puede tener su cuenta y las de varios clientes, al instalar se pregunta «¿con 
 otra?»; en agente/CI se exige `--account <email>` (o `--login --wait`) y, si no, **aborta** (no
 instala/licencia bajo la cuenta equivocada). Nuevo comando `logout` para cambiar de cuenta.
 
+## [1.67.0] — 2026-11-09
+
+### Cambiado — pulido visual del panel (shell, primitivas y marca blanca)
+
+Segundo pase del rediseño 2026. No cambia lógica ni rutas: unifica el estilo que
+cada vista armaba inline y cierra restos del tema anterior.
+
+- **Escala compartida**: tokens `--r-sm/md/lg/xl/pill`, `--sp-1..4`,
+  `--font-display` y `--font-mono`; mapeados a Tailwind (`warn`, `on-accent`,
+  radios). Se quitaron los radios sueltos del CSS global.
+- **Clases del shell** (antes estilos inline en `layout.ts`): `.headerbar`,
+  `.main-area`, `.crumb`, `.page-title`, `.iconctl`, `.langsel`, `.logoutlink`,
+  `.sb-brand`, `.brand-*`, `.sb-foot`, `.bot-*` y `.projsel`.
+- **Primitivas de contenido**: `.page-head`, `.toolbar`, `.stat`, `.formrow`,
+  `.label`, `.input`, `.select`, `.tabs` / `.tab`. Nuevos helpers en `ui.ts`:
+  `statTile()`, `pageHead()`, `field()`.
+- **Marca blanca con texto propio**: `BRAND_TEXT` y `BRAND_MUTED` se aplican
+  **solo en tema oscuro**; en claro se mantiene la tinta neutra y el acento se
+  oscurece con `color-mix` para conservar contraste. Si hay `BRAND_PRIMARY` sin
+  soft, `--accent-soft` se deriva del acento (antes quedaba el fucsia de Kooni).
+- **PWA**: el título por defecto del push usa `BRAND_NAME`; caché del service
+  worker `v2` → `v3` para tirar la copia vieja del rediseño.
+- **`/t/:code`** (seguimiento público) pasa al sistema de tokens: misma paleta,
+  Sora + IBM Plex Mono, acento de marca y nombre del negocio. Se retiró el teal
+  por defecto.
+- **Sombras brutalistas retiradas** (`Npx Npx 0`) en Agente, Costos,
+  Conversaciones, Configuración, Insights, Extras, KB, Resumen, Mejoras,
+  Tickets y el botón del plan; ahora usan `var(--shadow)`.
+- **Restos teal/hex eliminados** en Automatizaciones, Resumen, Equipo, Licencia
+  y Conexiones (avisos, chips y botones sobre acento con `--on-accent`).
+- **`docs/design-system.md` reescrito** con los tokens reales (claro/oscuro),
+  tipografía, primitivas, helpers, i18n y marca blanca.
+
+Tests: +5 en `test/admin/brand.test.ts` (nombre, acento, soft derivado, acento
+oscuro en claro y texto solo en oscuro). Contratos de `layout`, login, PWA,
+i18n y `/t/:code` siguen verdes.
+
 ## [1.66.0] — 2026-11-08
 
 ### Corregido — el hilo no mostraba lo enviado (app del celular ni automatizaciones)

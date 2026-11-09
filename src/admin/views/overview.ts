@@ -204,7 +204,7 @@ export async function renderOverview(env: Env): Promise<string> {
         </div>
       </div>
       <a href="/admin/agente" class="bigbtn font-display font-bold text-[12.5px] cursor-pointer flex items-center justify-center gap-2"
-         style="background:var(--accent);color:var(--on-accent);border:1px solid var(--accent);box-shadow:4px 4px 0 var(--linelit);padding:13px;margin-top:18px">
+         style="background:var(--accent);color:var(--on-accent);border:1px solid var(--accent);box-shadow:var(--shadow);padding:13px;margin-top:18px">
         <i data-lucide="settings-2" width="16" height="16"></i> ${t("ov.agentCta")}
       </a>
     </div>`;
@@ -299,7 +299,7 @@ export async function renderOverview(env: Env): Promise<string> {
           <span class="font-display font-semibold text-[12.5px] text-cream">${t("ov.limitsTitle")}</span>
           <div style="display:flex;gap:6px;flex-wrap:wrap">${chips}</div>
         </div>
-        <a href="/admin/licencia" class="font-display font-semibold text-[11.5px]" style="border:1px solid var(--accent);color:var(--accent2);padding:8px 14px;background:rgba(45,212,191,.06)">${t("ov.limitsCta")}</a>
+        <a href="/admin/licencia" class="font-display font-semibold text-[11.5px]" style="border:1px solid var(--accent);color:var(--accent2);padding:8px 14px;background:var(--accent-soft)">${t("ov.limitsCta")}</a>
       </div>`;
     }
   } catch (e) {

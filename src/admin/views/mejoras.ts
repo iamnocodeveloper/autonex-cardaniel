@@ -74,7 +74,7 @@ function suggestionCard(t: T, s: Suggestion): string {
     <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px">
       <form method="POST" action="/admin/mejoras/${encodeURIComponent(s.id)}/apply">
         <button class="bigbtn font-display font-bold text-[11.5px] cursor-pointer"
-                style="background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);box-shadow:3px 3px 0 var(--linelit);padding:8px 16px">${t("mej.apply")}</button>
+                style="background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);box-shadow:var(--shadow);padding:8px 16px">${t("mej.apply")}</button>
       </form>
       <form method="POST" action="/admin/mejoras/${encodeURIComponent(s.id)}/dismiss">
         <button class="ghostbtn cursor-pointer"
@@ -156,7 +156,7 @@ export async function renderMejoras(
       </div>
       <form method="POST" action="/admin/mejoras/run" style="margin-left:auto">
         <button class="bigbtn font-display font-bold text-[12.5px] cursor-pointer"
-                style="background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);box-shadow:3px 3px 0 var(--linelit);padding:9px 16px;display:flex;align-items:center;gap:8px;white-space:nowrap">
+                style="background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);box-shadow:var(--shadow);padding:9px 16px;display:flex;align-items:center;gap:8px;white-space:nowrap">
           <i data-lucide="sparkles" width="14" height="14"></i> ${t("mej.searchNow")}
         </button>
       </form>

@@ -68,7 +68,10 @@
 - Sobre el acento, el texto va en `on-accent` (tinta en oscuro, blanco en claro).
 - `ok` / `warn` / `bad` son estados semánticos — no son "el acento".
 - Marca blanca: `BRAND_*` (`wrangler.toml`) sobreescribe `accent` / `bg` /
-  `panel`; sin ellas, identidad Kooni.
+  `panel`; `BRAND_TEXT` / `BRAND_MUTED` cambian el color de texto **solo en
+  tema oscuro** (en claro se conserva la tinta neutra). Sin ellas, identidad
+  Kooni. El acento de marca se oscurece automáticamente en tema claro para
+  mantener contraste.
 
 ---
 

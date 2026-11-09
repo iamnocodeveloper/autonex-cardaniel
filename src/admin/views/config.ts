@@ -26,7 +26,7 @@ function esc(s: string): string {
   );
 }
 
-// Brand accent = teal (Kooni retro-terminal theme). The selected card
+// Brand accent = --accent (Kooni 2026 theme). The selected card
 // lights up accent; the hidden radio drives the highlight via Tailwind's `peer`
 // utilities so the whole card is clickable (it's a <label>).
 const CARD_BASE =
@@ -543,7 +543,7 @@ export async function renderConfig(
       </div>
 
       <button type="submit" class="bigbtn font-display font-bold text-[13px] cursor-pointer"
-              style="width:fit-content;background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);box-shadow:4px 4px 0 var(--linelit);padding:13px 24px;display:flex;align-items:center;gap:9px">
+              style="width:fit-content;background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);box-shadow:var(--shadow);padding:13px 24px;display:flex;align-items:center;gap:9px">
         <i data-lucide="check" width="16" height="16"></i> ${t("cfg.saveChanges")}
       </button>
     </form>`;

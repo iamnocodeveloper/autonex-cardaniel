@@ -118,7 +118,7 @@ export async function renderTickets(env: Env): Promise<string> {
             <input name="resolved_by" placeholder="${t("tk.emailPlaceholder")}" required
                    style="flex:1;background:var(--bg);border:1px solid var(--line);color:var(--cream);padding:9px 12px;font-size:12.5px;outline:none">
             <button class="bigbtn font-display font-bold text-[11.5px] cursor-pointer"
-                    style="background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);box-shadow:3px 3px 0 var(--linelit);padding:9px 16px">${t("tk.resolve")}</button>
+                    style="background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);box-shadow:var(--shadow);padding:9px 16px">${t("tk.resolve")}</button>
           </form>
         </div>
       </div>`;

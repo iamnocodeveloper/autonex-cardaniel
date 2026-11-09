@@ -29,40 +29,52 @@ function fmtDateTime(ms: number): string {
 }
 
 function shell(env: Env, title: string, inner: string): string {
-  const accent = (env.BRAND_PRIMARY || "#14b8a6").trim();
+  const accent = (env.BRAND_PRIMARY || "#e05fd8").trim();
+  const accentSoft = `color-mix(in srgb, ${accent} 14%, transparent)`;
   const name = (env.BUSINESS_NAME || env.BOT_NAME || "Kooni").trim();
-  const logo = env.BRAND_LOGO_URL ? `<img src="${esc(env.BRAND_LOGO_URL)}" alt="" style="max-height:40px;border-radius:6px">` : "";
+  const logo = env.BRAND_LOGO_URL ? `<img src="${esc(env.BRAND_LOGO_URL)}" alt="" style="max-height:40px;border-radius:var(--r-sm)">` : "";
   return `<!DOCTYPE html>
 <html lang="es"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex">
+<meta name="theme-color" content="#0f0e17">
 <title>${esc(title)} · ${esc(name)}</title>
 <style>
+  :root{
+    --bg:#0f0e17; --panel:#181624; --panel2:#221d33; --line:#332c48; --linelit:#463c63;
+    --cream:#ece9f5; --muted:#a49bbd; --dim:#726a8c;
+    --accent:${esc(accent)}; --accent-soft:${accentSoft}; --bad:#fb7185;
+    --r-sm:8px; --r-md:10px; --r-lg:12px; --r-xl:14px; --r-pill:999px;
+    --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
   *{box-sizing:border-box}
-  body{margin:0;background:#0f1115;color:#e8ecf1;font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  body{margin:0;background:var(--bg);color:var(--cream);
+    font:15px/1.5 'Sora',ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased}
   .wrap{max-width:520px;margin:0 auto;padding:22px 16px 48px}
-  .card{background:#171a21;border:1px solid #262b35;border-radius:14px;padding:18px;margin-top:14px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-xl);padding:18px;margin-top:14px}
   .head{display:flex;align-items:center;gap:10px;justify-content:space-between}
-  .brand{font-weight:700;font-size:16px}
-  .code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:700;font-size:26px;letter-spacing:.02em}
-  .muted{color:#9aa4b2}
-  .dim{color:#6b7480}
-  .accent{color:${esc(accent)}}
+  .brand{font-weight:700;font-size:16px;letter-spacing:-.01em}
+  .code{font-family:var(--mono);font-weight:700;font-size:26px;letter-spacing:.02em}
+  .muted{color:var(--muted)}
+  .dim{color:var(--dim)}
+  .accent{color:var(--accent)}
   .steps{display:flex;flex-direction:column;gap:0;margin-top:6px}
   .step{display:flex;align-items:flex-start;gap:12px;padding:6px 0}
-  .dot{width:14px;height:14px;border-radius:50%;border:2px solid #3a4150;margin-top:3px;flex:none;background:#171a21}
-  .step.done .dot{background:${esc(accent)};border-color:${esc(accent)}}
-  .step.cur .dot{border-color:${esc(accent)};box-shadow:0 0 0 4px ${esc(accent)}22}
+  .dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--linelit);margin-top:3px;flex:none;background:var(--panel)}
+  .step.done .dot{background:var(--accent);border-color:var(--accent)}
+  .step.cur .dot{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
   .step .lbl{font-weight:600}
-  .step.pend .lbl,.step.pend .when{color:#6b7480}
+  .step.pend .lbl,.step.pend .when{color:var(--dim)}
   .row{display:flex;justify-content:space-between;gap:12px;padding:4px 0}
-  .row.total{border-top:1px solid #262b35;margin-top:6px;padding-top:10px;font-weight:700;font-size:16px}
-  .badge{display:inline-block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;padding:3px 10px;border-radius:999px;border:1px solid ${esc(accent)};color:${esc(accent)}}
-  .badge.bad{border-color:#ef4444;color:#ef4444}
-  .item{display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-bottom:1px solid #20242d}
+  .row.total{border-top:1px solid var(--line);margin-top:6px;padding-top:10px;font-weight:700;font-size:16px}
+  .badge{display:inline-block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;
+    padding:3px 10px;border-radius:var(--r-pill);border:1px solid var(--accent);color:var(--accent);background:var(--accent-soft)}
+  .badge.bad{border-color:var(--bad);color:var(--bad);background:color-mix(in srgb, var(--bad) 12%, transparent)}
+  .item{display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-bottom:1px solid var(--panel2)}
   .item:last-child{border-bottom:0}
-  .foot{margin-top:22px;text-align:center;font-size:12px;color:#6b7480}
+  .foot{margin-top:22px;text-align:center;font-size:12px;color:var(--dim)}
 </style></head>
 <body><div class="wrap">
   <div class="head">${logo}<div class="brand">${esc(name)}</div></div>

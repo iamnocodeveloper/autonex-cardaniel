@@ -32,6 +32,21 @@ export function pill(text: string, kind: PillKind = "dim", icon?: string): strin
   return `<span class="${cls}">${icon ? `<i data-lucide="${icon}" width="11" height="11"></i>` : ""}${text}</span>`;
 }
 
+/** Tarjeta de métrica: valor grande + etiqueta en mayúsculas. */
+export function statTile(value: string, label: string): string {
+  return `<div class="stat"><div class="v">${value}</div><div class="l">${label}</div></div>`;
+}
+
+/** Cabecera de página: título + subtítulo opcional + acciones a la derecha. */
+export function pageHead(title: string, sub?: string, actions = ""): string {
+  return `<div class="page-head"><div><h2>${title}</h2>${sub ? `<div class="sub">${sub}</div>` : ""}</div>${actions}</div>`;
+}
+
+/** Campo de formulario consistente: label + control + ayuda opcional. */
+export function field(label: string, control: string, hint?: string): string {
+  return `<label class="formrow"><span class="label">${label}</span>${control}${hint ? `<span class="bot-sub">${hint}</span>` : ""}</label>`;
+}
+
 /**
  * Botón-ícono de submit dentro de un form existente (mantiene `name="status"` y
  * el `value` que espera el handler).

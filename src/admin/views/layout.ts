@@ -130,6 +130,10 @@ const HEAD_ASSETS = `
             accent2: "var(--accent-2)",
             cream: "var(--cream)", muted: "var(--muted)", dim: "var(--dim)",
             ok: "var(--ok)", info: "var(--info)", bad: "var(--bad)", violet: "var(--violet)",
+            warn: "var(--warn)", "on-accent": "var(--on-accent)",
+          },
+          borderRadius: {
+            sm: "var(--r-sm)", md: "var(--r-md)", lg: "var(--r-lg)", xl: "var(--r-xl)",
           },
           fontFamily: {
             display: ["'Sora'", "ui-sans-serif", "system-ui", "sans-serif"],
@@ -147,6 +151,13 @@ const HEAD_ASSETS = `
 // overlay. All motion collapses under prefers-reduced-motion.
 const GLOBAL_STYLE = `
 <style>
+  /* ── Escala compartida (radios y espaciado) ──────────────────────────────── */
+  :root{
+    --r-sm:8px; --r-md:10px; --r-lg:12px; --r-xl:14px; --r-pill:999px;
+    --sp-1:6px; --sp-2:10px; --sp-3:14px; --sp-4:22px;
+    --font-display:'Sora',ui-sans-serif,system-ui,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+  }
   /* ── Tema oscuro (default) — identidad Kooni: tinta con matiz violeta + fucsia ── */
   :root, :root[data-theme="dark"]{
     --bg:#0f0e17; --panel:#181624; --panel2:#221d33; --raise:#2f2745;
@@ -197,20 +208,17 @@ const GLOBAL_STYLE = `
   @keyframes toastIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
   @keyframes toastOut{to{opacity:0;transform:translateY(8px);visibility:hidden}}
 
-  /* (scanlines retirado en el rediseño — la clase queda inerte por compat) */
-  .scanlines::after{content:none}
-
   /* sidebar nav */
-  .navlink{border-radius:8px}
+  .navlink{border-radius:var(--r-sm)}
   .navlink:hover{background:var(--panel2);color:var(--cream)}
   .navlink:hover [data-lucide]{color:var(--accent)}
 
   /* entrada + botones (sombra suave, no brutalista) */
   .card{animation:rise .4s cubic-bezier(.16,1,.3,1) both}
-  .bigbtn{transition:transform .12s ease,box-shadow .12s ease,filter .12s ease;border-radius:10px;box-shadow:var(--shadow)}
+  .bigbtn{transition:transform .12s ease,box-shadow .12s ease,filter .12s ease;border-radius:var(--r-md);box-shadow:var(--shadow)}
   .bigbtn:hover{transform:translateY(-1px);filter:brightness(1.05);box-shadow:0 12px 26px -10px var(--accent-soft)}
   .bigbtn:active{transform:translateY(0);filter:none}
-  .ghostbtn{border-radius:9px}
+  .ghostbtn{border-radius:var(--r-sm)}
   .ghostbtn:hover{border-color:var(--accent);color:var(--cream);background:var(--accent-soft)}
   .glow{text-shadow:0 0 24px var(--accent-soft)}
 
@@ -233,14 +241,14 @@ const GLOBAL_STYLE = `
      Estados vacíos, avisos, pills e íconos-botón: antes cada vista los armaba
      con estilos inline distintos. Son ADITIVAS: no renombran nada existente. */
   .pill{display:inline-flex;align-items:center;gap:4px;font-size:10px;letter-spacing:.03em;
-    padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+    padding:2px 8px;border-radius:var(--r-pill);border:1px solid var(--line);color:var(--muted);white-space:nowrap}
   .pill-ok{color:var(--ok);border-color:var(--ok);background:var(--ok-soft)}
   .pill-warn{color:var(--warn);border-color:var(--warn);background:var(--warn-soft)}
   .pill-bad{color:var(--bad);border-color:var(--bad);background:var(--bad-soft)}
   .pill-accent{color:var(--accent);border-color:var(--accent);background:var(--accent-soft)}
   .pill-dim{color:var(--dim)}
   .alert{display:flex;align-items:flex-start;gap:8px;font-size:12px;line-height:1.45;
-    padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--muted)}
+    padding:10px 12px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--panel);color:var(--muted)}
   .alert [data-lucide]{flex:none;margin-top:1px}
   .alert-ok{border-color:var(--ok);background:var(--ok-soft);color:var(--ok)}
   .alert-warn{border-color:var(--warn);background:var(--warn-soft);color:var(--warn)}
@@ -248,11 +256,11 @@ const GLOBAL_STYLE = `
   .empty{display:flex;flex-direction:column;align-items:center;gap:8px;padding:34px 18px;text-align:center;color:var(--dim);font-size:12.5px}
   .empty [data-lucide]{opacity:.6}
   .iconbtn{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;
-    border:1px solid var(--line);border-radius:8px;background:none;color:var(--muted);cursor:pointer;transition:all .12s ease}
+    border:1px solid var(--line);border-radius:var(--r-sm);background:none;color:var(--muted);cursor:pointer;transition:all .12s ease}
   .iconbtn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
   .iconbtn-ok:hover{border-color:var(--ok);color:var(--ok);background:var(--ok-soft)}
   .iconbtn-bad:hover{border-color:var(--bad);color:var(--bad);background:var(--bad-soft)}
-  .tblwrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px}
+  .tblwrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg)}
   .bar{transition:transform .5s cubic-bezier(.16,1,.3,1)}
   .bargrp:hover .bar{background:var(--accent) !important}
 
@@ -265,9 +273,9 @@ const GLOBAL_STYLE = `
   /* modal + toast (class names kept from prior layout for existing views) */
   .modal-backdrop{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;
     padding:1rem;background:rgba(4,8,12,.7);animation:fadeIn .15s ease-out}
-  .modal-card{background:var(--panel);border:1px solid var(--linelit);border-radius:14px;box-shadow:0 24px 60px -12px rgba(0,0,0,.5);
+  .modal-card{background:var(--panel);border:1px solid var(--linelit);border-radius:var(--r-xl);box-shadow:0 24px 60px -12px rgba(0,0,0,.5);
     animation:popIn .18s cubic-bezier(.16,1,.3,1);transform-origin:center}
-  .toast{background:var(--panel);border:1px solid var(--linelit);border-radius:10px;color:var(--cream);box-shadow:var(--shadow);
+  .toast{background:var(--panel);border:1px solid var(--linelit);border-radius:var(--r-md);color:var(--cream);box-shadow:var(--shadow);
     animation:toastIn .25s cubic-bezier(.16,1,.3,1),toastOut .3s ease-in 2.4s forwards}
 
   /* app shell */
@@ -275,7 +283,59 @@ const GLOBAL_STYLE = `
   .sb{border-right:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
   .sb-nav{padding:14px 12px;display:flex;flex-direction:column;gap:2px;flex:1;overflow-y:auto}
   .sb-sec{font-size:9.5px;letter-spacing:.24em;text-transform:uppercase;padding:14px 10px 6px}
-  .live-pill{display:flex;align-items:center;gap:9px;background:var(--panel);border:1px solid var(--line);padding:8px 13px}
+  .live-pill{display:flex;align-items:center;gap:9px;background:var(--panel);border:1px solid var(--line);padding:8px 13px;border-radius:var(--r-pill)}
+
+  /* shell: header, sidebar y áreas de contenido (estilos que antes iban inline) */
+  .headerbar{position:sticky;top:0;z-index:30;background:var(--panel);border-bottom:1px solid var(--line);
+    padding:14px 26px;display:flex;align-items:center;gap:14px}
+  .main-area{padding:22px 26px;min-width:0}
+  .crumb{font-size:10px;letter-spacing:.22em;color:var(--dim);text-transform:uppercase}
+  .page-title{font-family:'Sora';font-weight:700;font-size:22px;margin:2px 0 0;letter-spacing:-.02em}
+  .iconctl{flex:none;width:36px;height:36px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);
+    cursor:pointer;display:inline-flex;align-items:center;justify-content:center;border-radius:var(--r-sm)}
+  .iconctl:hover{border-color:var(--accent);color:var(--cream)}
+  .langsel{background:var(--panel2);border:1px solid var(--line);color:var(--muted);font-size:12px;
+    padding:8px 10px;border-radius:var(--r-sm);cursor:pointer}
+  .logoutlink{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;letter-spacing:.04em;
+    color:var(--dim);border:1px solid var(--line);padding:7px 12px;border-radius:var(--r-sm);text-decoration:none}
+  .logoutlink:hover{color:var(--cream);border-color:var(--accent)}
+  .sb-brand{padding:20px 18px 16px;border-bottom:1px solid var(--line)}
+  .brand-row{display:flex;align-items:center;gap:10px}
+  .brand-mark{width:34px;height:34px;flex:none;border:1.5px solid var(--accent);display:flex;align-items:center;
+    justify-content:center;background:var(--accent-soft);box-shadow:var(--shadow)}
+  .brand-mark img{width:20px;height:20px;object-fit:contain}
+  .brand-meta{line-height:1.05;min-width:0}
+  .brand-name{font-family:'Sora';font-weight:700;font-size:15px;letter-spacing:-.02em;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .brand-sub{font-size:9.5px;letter-spacing:.22em;color:var(--dim);text-transform:uppercase}
+  .sb-foot{padding:14px;border-top:1px solid var(--line)}
+  .bot-card{display:flex;align-items:center;gap:10px;padding:8px;border:1px solid var(--line);border-radius:var(--r-sm)}
+  .bot-avatar{width:30px;height:30px;flex:none;background:var(--raise);border:1px solid var(--linelit);
+    display:flex;align-items:center;justify-content:center;color:var(--accent)}
+  .bot-meta{line-height:1.2;overflow:hidden;min-width:0}
+  .bot-title{font-size:12px;font-weight:600;white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
+  .bot-sub{font-size:10px;color:var(--dim)}
+  .projsel{background:var(--panel2);color:var(--muted);border:1px solid var(--line);border-radius:var(--r-sm);
+    padding:6px 10px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.04em;cursor:pointer}
+
+  /* ── Primitivas de contenido (usar en vez de estilos ad-hoc) ──────────────── */
+  .page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:0 0 18px}
+  .page-head h1,.page-head h2{margin:0}
+  .page-head .sub{font-size:12px;color:var(--muted);margin-top:4px}
+  .toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px 16px}
+  .stat .v{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;line-height:1.1;color:var(--cream)}
+  .stat .l{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin-top:4px}
+  .formrow{display:flex;flex-direction:column;gap:6px}
+  .label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
+  .input,.select{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--cream);
+    padding:9px 11px;border-radius:var(--r-sm);font-size:12.5px;outline:none}
+  .input:focus,.select:focus{border-color:var(--accent)}
+  .select{cursor:pointer}
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:10px;margin-bottom:14px}
+  .tab{font-size:12px;color:var(--muted);border:1px solid transparent;border-radius:var(--r-pill);padding:5px 12px;text-decoration:none}
+  .tab:hover{color:var(--cream);background:var(--panel2)}
+  .tab.active,.tab[aria-current="page"]{color:var(--accent);border-color:var(--accent);background:var(--accent-soft)}
   /* hamburguesa + fondo del drawer: solo se ven en móvil */
   .hburger{display:none}
   .nav-backdrop{display:none}
@@ -303,8 +363,6 @@ const GLOBAL_STYLE = `
     /* Modales casi a pantalla completa, con scroll propio. */
     .modal-backdrop{padding:0 !important;align-items:flex-end !important}
     .modal-card{width:100% !important;max-width:100% !important;max-height:92dvh;overflow-y:auto;box-shadow:none !important}
-    /* El overlay de scanlines cuesta pintado en móvil — bajarlo. */
-    .scanlines::after{opacity:.18}
     /* Cualquier <table> suelta que no quepa: scroll en vez de romper el layout. */
     main table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
   }
@@ -527,7 +585,10 @@ const K_MARK = `<svg width="18" height="18" viewBox="0 0 32 32" fill="none" aria
 // El panel hereda la identidad de Kooni salvo que el instalador/revendedor
 // defina vars BRAND_* (ver wrangler.toml y env.ts). Colores = CSS custom
 // properties con override; nombre/logo van en la sidebar.
-interface Brand { name: string; logo: string; primary: string; primarySoft: string; accent2: string; bg: string; panel: string; }
+interface Brand {
+  name: string; logo: string; primary: string; primarySoft: string; accent2: string;
+  bg: string; panel: string; text: string; muted: string;
+}
 function resolveBrand(env?: Env, overlayBrand?: Record<string, string>): Brand {
   // Precedencia: marca del backend (overlay que pone el super admin) > vars
   // BRAND_* de wrangler.toml > identidad Kooni de GLOBAL_STYLE. Sin nada, los
@@ -542,19 +603,44 @@ function resolveBrand(env?: Env, overlayBrand?: Record<string, string>): Brand {
     accent2: pick("accent2", env?.BRAND_ACCENT2),
     bg: pick("bg", env?.BRAND_BG),
     panel: pick("panel", env?.BRAND_PANEL),
+    text: pick("text", env?.BRAND_TEXT),
+    muted: pick("muted", env?.BRAND_MUTED),
   };
 }
 function brandOverrides(b: Brand): string {
   const v: string[] = [];
   if (b.bg) v.push(`--bg:${b.bg}`);
   if (b.panel) v.push(`--panel:${b.panel}`);
-  if (b.primary) v.push(`--accent:${b.primary}`);
+  if (b.primary) {
+    v.push(`--accent:${b.primary}`);
+    // Sin un soft explícito, derivarlo del acento para que no quede el fucsia
+    // de Kooni detrás de una marca de otro color.
+    if (!b.primarySoft) v.push(`--accent-soft:color-mix(in srgb, ${b.primary} 14%, transparent)`);
+  }
   if (b.accent2) v.push(`--accent-2:${b.accent2}`);
   if (b.primarySoft) v.push(`--accent-soft:${b.primarySoft}`);
-  return v.length ? `:root,:root[data-theme]{${v.join(";")}}` : "";
+
+  // En tema claro un acento claro pierde contraste: derivar un tono más
+  // profundo. Solo aplica a la marca; la identidad Kooni no se toca porque
+  // sus overrides quedan vacíos.
+  const light: string[] = [];
+  if (b.primary) light.push(`--accent:color-mix(in srgb, ${b.primary} 65%, #000)`);
+  if (b.accent2) light.push(`--accent-2:color-mix(in srgb, ${b.accent2} 72%, #000)`);
+
+  // El color de texto de marca se aplica SOLO al tema oscuro: en claro tiene
+  // que seguir siendo tinta oscura para no quedar ilegible.
+  const darkText: string[] = [];
+  if (b.text) darkText.push(`--cream:${b.text}`);
+  if (b.muted) darkText.push(`--muted:${b.muted}`);
+
+  const out: string[] = [];
+  if (v.length) out.push(`:root,:root[data-theme]{${v.join(";")}}`);
+  if (light.length) out.push(`:root[data-theme="light"]{${light.join(";")}}`);
+  if (darkText.length) out.push(`:root[data-theme="dark"],:root:not([data-theme="light"]){${darkText.join(";")}}`);
+  return out.join("");
 }
 
-function sidebar(activeTab: string, locked: (id: string) => boolean, niche: NichePack | null, tierLabel: string, brand: Brand = { name: "Kooni", logo: "", primary: "", primarySoft: "", accent2: "", bg: "", panel: "" }, t: (k: string) => string = (k) => k): string {
+function sidebar(activeTab: string, locked: (id: string) => boolean, niche: NichePack | null, tierLabel: string, brand: Brand = { name: "Kooni", logo: "", primary: "", primarySoft: "", accent2: "", bg: "", panel: "", text: "", muted: "" }, t: (k: string) => string = (k) => k): string {
   // Ítems extra que aporta el niche pack activo (packs "pesados", ver NicheHooks).
   // Se insertan en la sección que declaran (por su label): restaurante → Pedidos
   // en "Inbox", Menú en "Mi Agente", Reportes en "Análisis".
@@ -600,26 +686,26 @@ function sidebar(activeTab: string, locked: (id: string) => boolean, niche: Nich
   }).join("");
 
   return `<aside class="sb">
-    <div class="sb-brand" style="padding:20px 18px 16px;border-bottom:1px solid var(--line)">
-      <div style="display:flex;align-items:center;gap:10px">
-        <div style="width:34px;height:34px;flex:none;border:1.5px solid var(--accent);display:flex;align-items:center;justify-content:center;background:var(--accent-soft);box-shadow:var(--shadow)">
-          ${brand.logo ? `<img src="${brand.logo}" alt="" style="width:20px;height:20px;object-fit:contain">` : K_MARK}
+    <div class="sb-brand">
+      <div class="brand-row">
+        <div class="brand-mark">
+          ${brand.logo ? `<img src="${brand.logo}" alt="">` : K_MARK}
         </div>
-        <div style="line-height:1.05">
-          <div style="font-family:'Sora';font-weight:700;font-size:15px;letter-spacing:-.02em">${brand.name}</div>
-          <div style="font-size:9.5px;letter-spacing:.22em;color:var(--dim);text-transform:uppercase">Panel · ${tierLabel}</div>
+        <div class="brand-meta">
+          <div class="brand-name" title="${escLogin(brand.name)}">${brand.name}</div>
+          <div class="brand-sub">Panel · ${tierLabel}</div>
         </div>
       </div>
     </div>
     <nav class="sb-nav">${sections}</nav>
-    <div class="sb-foot" style="padding:14px;border-top:1px solid var(--line)">
-      <div style="display:flex;align-items:center;gap:10px;padding:8px;border:1px solid var(--line)">
-        <div style="width:30px;height:30px;flex:none;background:var(--raise);border:1px solid var(--linelit);display:flex;align-items:center;justify-content:center;color:var(--accent)">
+    <div class="sb-foot">
+      <div class="bot-card">
+        <div class="bot-avatar">
           <i data-lucide="bot" width="16" height="16"></i>
         </div>
-        <div style="line-height:1.2;overflow:hidden">
-          <div style="font-size:12px;font-weight:600;white-space:nowrap;text-overflow:ellipsis;overflow:hidden">${t("chrome.panelBot")}</div>
-          <div style="font-size:10px;color:var(--dim)">${t("chrome.session")} · v${escLogin(BOT_VERSION)}</div>
+        <div class="bot-meta">
+          <div class="bot-title">${t("chrome.panelBot")}</div>
+          <div class="bot-sub">${t("chrome.session")} · v${escLogin(BOT_VERSION)}</div>
         </div>
       </div>
     </div>
@@ -658,42 +744,39 @@ export async function layout(opts: { title: string; activeTab: string; body: str
   ${opts.env ? `<style>${brandOverrides(brand)}</style>` : ""}
   ${opts.env ? pwaHeadTags(opts.env) : ""}
 </head>
-<body class="scanlines">
+<body>
   <div class="shell">
     ${sidebar(opts.activeTab, lockedSync, niche, tierLabel, brand, t as (k: string) => string)}
     <div class="nav-backdrop" data-nav-close></div>
     <div style="display:flex;flex-direction:column;min-width:0">
-      <header style="position:sticky;top:0;z-index:30;background:var(--panel);border-bottom:1px solid var(--line);padding:14px 26px;display:flex;align-items:center;gap:14px">
+      <header class="headerbar">
         <button type="button" class="hburger" data-nav-open aria-label="${t("chrome.menu")}">
           <i data-lucide="menu" width="20" height="20"></i>
         </button>
         <div style="min-width:0">
-          <div class="crumb" style="font-size:10px;letter-spacing:.22em;color:var(--dim);text-transform:uppercase">${sectionLabel} / ${itemLabel}</div>
-          <h1 style="font-family:'Sora';font-weight:700;font-size:22px;margin:2px 0 0;letter-spacing:-.02em">${itemLabel}</h1>
+          <div class="crumb">${sectionLabel} / ${itemLabel}</div>
+          <h1 class="page-title">${itemLabel}</h1>
         </div>
         <div id="proj-switcher" class="hide-mobile" style="margin-left:auto"></div>
         <form method="POST" action="/admin/config/language" class="hide-mobile" style="flex:none">
-          <select name="lang" onchange="this.form.submit()" aria-label="${t("chrome.lang")}" title="${t("chrome.langLabel")}"
-            style="background:var(--panel2);border:1px solid var(--line);color:var(--muted);font-size:12px;padding:8px 10px;border-radius:8px;cursor:pointer">
+          <select name="lang" onchange="this.form.submit()" class="langsel" aria-label="${t("chrome.lang")}" title="${t("chrome.langLabel")}">
             <option value="es" ${lang === "es" ? "selected" : ""}>🇲🇽 Español</option>
             <option value="en" ${lang === "en" ? "selected" : ""}>🇺🇸 English</option>
           </select>
         </form>
-        <button type="button" id="kooni-theme" title="${t("chrome.theme")}" aria-label="${t("chrome.theme")}"
-          style="flex:none;width:36px;height:36px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;border-radius:8px">
+        <button type="button" id="kooni-theme" class="iconctl" title="${t("chrome.theme")}" aria-label="${t("chrome.theme")}">
           <i data-lucide="moon-star" width="16" height="16"></i>
         </button>
-        <button type="button" id="kooni-push" hidden title="${t("chrome.push")}"
-          style="flex:none;width:36px;height:36px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;border-radius:8px">
+        <button type="button" id="kooni-push" class="iconctl" hidden title="${t("chrome.push")}">
           <i data-lucide="bell" width="16" height="16"></i>
         </button>
         <div class="live-pill">
           <span style="width:8px;height:8px;border-radius:50%;background:var(--ok);animation:pulse 1.8s ease-in-out infinite,ring 2s infinite"></span>
           <span style="font-size:11px;font-weight:600;letter-spacing:.04em">${t("chrome.online")}</span>
         </div>
-        <a href="/admin/logout" title="${t("chrome.logoutTitle")}" class="hide-mobile" style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--dim);border:1px solid var(--line);padding:7px 12px;text-decoration:none">${t("chrome.logout")}</a>
+        <a href="/admin/logout" title="${t("chrome.logoutTitle")}" class="hide-mobile logoutlink">${t("chrome.logout")}</a>
       </header>
-      <main style="padding:22px 26px;min-width:0">${opts.body}</main>
+      <main class="main-area">${opts.body}</main>
     </div>
   </div>
   <div id="modal-root"></div>
@@ -712,9 +795,7 @@ export async function layout(opts: { title: string; activeTab: string; body: str
     // template literal, así que los \' del código fuente NO llegan al navegador
     // y cerraban la cadena JS de golpe (SyntaxError en cada carga del panel).
     // El parser de HTML las decodifica antes de que corran el onchange y el CSS.
-    el.innerHTML = '<select onchange="if(this.value.indexOf(&#39;http&#39;)===0)window.location=this.value" ' +
-      'style="background:rgba(20,16,9,.9);color:var(--fg,#e8e0cf);border:1px solid var(--line);border-radius:8px;' +
-      'padding:6px 10px;font-family:&#39;IBM Plex Mono&#39;,monospace;font-size:11px;letter-spacing:.04em;cursor:pointer" ' +
+    el.innerHTML = '<select class="projsel" onchange="if(this.value.indexOf(&#39;http&#39;)===0)window.location=this.value" ' +
       'title="${t("chrome.switchProject")}">' + opts + '</select>';
   }).catch(function(){});
   </script>
@@ -801,7 +882,7 @@ export function loginPage(opts: { error?: string; env?: Env; t?: T } = {}): stri
     }
   </style>
 </head>
-<body class="scanlines">
+<body>
   <div class="login-shell">
     <div class="login-brand">
       <div style="position:relative;display:flex;flex-direction:column;gap:18px;max-width:380px">

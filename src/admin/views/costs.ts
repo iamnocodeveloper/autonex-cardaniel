@@ -99,7 +99,7 @@ export async function renderCosts(env: Env, saved = false): Promise<string> {
                style="width:90px;background:var(--bg);border:1px solid var(--line);color:var(--cream);padding:8px 10px;font-size:12.5px;outline:none">
         <span class="text-[10.5px] text-dim">${t("cost.budgetHint")}</span>
         <button class="bigbtn font-display font-bold text-[12px] cursor-pointer"
-          style="background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);box-shadow:3px 3px 0 var(--linelit);padding:8px 16px">${t("cost.save")}</button>
+          style="background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);box-shadow:var(--shadow);padding:8px 16px">${t("cost.save")}</button>
       </form>
     </div>`;
 
