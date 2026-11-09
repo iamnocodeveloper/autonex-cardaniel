@@ -201,7 +201,7 @@ export async function renderInsights(env: Env, analyzedParam?: string): Promise<
     <div class="flex flex-wrap items-center gap-[14px]">
       <form method="POST" action="/admin/insights/analyze">
         <button class="bigbtn font-display font-bold text-[12.5px] cursor-pointer"
-          style="background:var(--panel);border:1px solid var(--linelit);color:var(--accent-2);box-shadow:4px 4px 0 var(--linelit);padding:11px 16px;display:flex;align-items:center;gap:8px">
+          style="background:var(--panel);border:1px solid var(--linelit);color:var(--accent-2);box-shadow:var(--shadow);padding:11px 16px;display:flex;align-items:center;gap:8px">
           <i data-lucide="sparkles" width="16" height="16"></i> ${t("ins.analyze")}
         </button>
       </form>

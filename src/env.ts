@@ -71,6 +71,10 @@ export interface Env {
   BRAND_ACCENT2?: string;
   BRAND_BG?: string;
   BRAND_PANEL?: string;
+  // Texto de marca. Se aplica SOLO en tema oscuro; en claro se mantiene la
+  // tinta neutra para conservar contraste.
+  BRAND_TEXT?: string;
+  BRAND_MUTED?: string;
 
   // Secrets (member-set via wrangler secret put)
   ANTHROPIC_API_KEY: string;

@@ -531,11 +531,11 @@ export async function renderThreadLive(env: Env, convId: string): Promise<string
                  title="${t("conv.returnBotTitle")}"
                  style="cursor:pointer;list-style:none;font-size:11px;color:var(--accent-2);background:var(--panel2);border:1px solid var(--linelit);padding:6px 11px;display:inline-flex;align-items:center;gap:6px">${t("conv.returnBot")}</summary>
         <form method="POST" action="/admin/conversations/${encodeURIComponent(convId)}/resume"
-              style="position:absolute;right:0;z-index:10;margin-top:8px;width:280px;background:var(--panel);border:1px solid var(--linelit);box-shadow:6px 6px 0 rgba(0,0,0,.4);padding:12px">
+              style="position:absolute;right:0;z-index:10;margin-top:8px;width:280px;background:var(--panel);border:1px solid var(--linelit);box-shadow:var(--shadow);padding:12px">
           <p style="font-size:11px;color:var(--muted);margin:0 0 8px">${t("conv.resumeHint")}</p>
           <textarea name="summary" rows="3" required placeholder="${t("conv.resumePlaceholder")}"
                     style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--cream);padding:8px 10px;font-size:12px;outline:none;resize:vertical;margin-bottom:8px"></textarea>
-          <button class="bigbtn" style="width:100%;background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);box-shadow:3px 3px 0 var(--linelit);padding:9px;font-size:12px;font-weight:700;font-family:'Sora';cursor:pointer">${t("conv.sendToBot")}</button>
+          <button class="bigbtn" style="width:100%;background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);box-shadow:var(--shadow);padding:9px;font-size:12px;font-weight:700;font-family:'Sora';cursor:pointer">${t("conv.sendToBot")}</button>
         </form>
       </details>
       ${blockBtn}
@@ -665,7 +665,7 @@ function renderComposer(convId: string, t: T): string {
               class="chip" style="background:var(--panel2);border:1px solid var(--linelit);color:var(--accent-2);padding:11px 13px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px" title="${t("conv.suggestTitle")}">
         <i data-lucide="sparkles" width="13" height="13"></i> ${t("conv.suggest")}
       </button>
-      <button type="submit" class="bigbtn" style="background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);box-shadow:4px 4px 0 var(--linelit);padding:11px 18px;font-size:12.5px;font-weight:700;font-family:'Sora';cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px">
+      <button type="submit" class="bigbtn" style="background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);box-shadow:var(--shadow);padding:11px 18px;font-size:12.5px;font-weight:700;font-family:'Sora';cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px">
         ${t("conv.send")} <i data-lucide="send" width="14" height="14"></i>
       </button>
     </form>

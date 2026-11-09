@@ -75,11 +75,14 @@ LICENSE_PUBLIC_KEY = "MCowBQYDK2VwAyEALxrjpy7pkyHSqlCcObUfMygNXNznd9/YXhamO17e4t
 # puede ofrecer el mismo bot con SU nombre, logo y colores (reseller white-label).
 # BRAND_NAME = "Mi Agencia"
 # BRAND_LOGO_URL = "https://midominio.com/logo.png"
-# BRAND_PRIMARY = "#2dd4bf"
-# BRAND_PRIMARY_SOFT = "rgba(45,212,191,.13)"
-# BRAND_ACCENT2 = "#6ee7b7"
-# BRAND_BG = "#0d1218"
-# BRAND_PANEL = "#141b24"
+# BRAND_PRIMARY = "#e05fd8"
+# BRAND_PRIMARY_SOFT = "rgba(224,95,216,.14)"
+# BRAND_ACCENT2 = "#a679f6"
+# BRAND_BG = "#0f0e17"
+# BRAND_PANEL = "#181624"
+# Texto de marca (solo tema oscuro; en claro se usa tinta neutra):
+# BRAND_TEXT = "#ffffff"
+# BRAND_MUTED = "#cfc9da"
 # Zernio (multicanal — IG/FB/TG/WhatsApp…): automatizaciones desde el panel /admin/automatizaciones.
 # (las reglas se gestionan en el panel; aquí solo si quieres defaults por env)
 

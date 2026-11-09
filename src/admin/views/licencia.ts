@@ -31,7 +31,7 @@ export async function renderLicencia(env: Env, msg?: string, isError?: boolean):
   const overlay = await readOverlay(env);
 
   const banner = msg
-    ? `<div style="border:1px solid ${isError ? "var(--bad)" : "var(--ok)"};color:${isError ? "var(--bad)" : "var(--ok)"};padding:10px 14px;font-size:12px;background:${isError ? "rgba(248,113,113,.06)" : "rgba(52,211,153,.06)"}">${esc(msg)}</div>`
+    ? `<div style="border:1px solid ${isError ? "var(--bad)" : "var(--ok)"};color:${isError ? "var(--bad)" : "var(--ok)"};padding:10px 14px;font-size:12px;background:${isError ? "var(--bad-soft)" : "var(--ok-soft)"}">${esc(msg)}</div>`
     : "";
 
   // Detalle de vigencia según el estado del código.
@@ -55,7 +55,7 @@ export async function renderLicencia(env: Env, msg?: string, isError?: boolean):
     ins?.state === "grace"
       ? `<div class="bg-panel border" style="padding:18px 20px;border-color:var(--bad);display:flex;flex-direction:column;gap:8px">
            <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
-             <span style="font-size:10px;letter-spacing:.14em;color:var(--bad);border:1px solid var(--bad);background:rgba(248,113,113,.08);padding:3px 10px;font-weight:700">${t("lic.badge.grace")}</span>
+             <span style="font-size:10px;letter-spacing:.14em;color:var(--bad);border:1px solid var(--bad);background:var(--bad-soft);padding:3px 10px;font-weight:700">${t("lic.badge.grace")}</span>
              <span class="text-dim text-[11px] font-mono">${esc(vigencia)}</span>
            </div>
            <p class="text-muted text-[12px]" style="margin:0">${t("lic.grace.help")}</p>

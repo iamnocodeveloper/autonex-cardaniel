@@ -58,10 +58,8 @@ function triggerLabel(t: T, trig: string): string {
 }
 
 function triggerBadge(t: T, trig: string): string {
-  const color = trig === "cron" ? "var(--accent2)" : trig === "rebuild" ? "var(--dim)" : "var(--muted)";
-  return `<span style="font-size:9.5px;letter-spacing:.08em;color:${color};border:1px solid ${color};padding:2px 7px;font-weight:700;white-space:nowrap">${esc(
-    triggerLabel(t, trig),
-  )}</span>`;
+  const kind = trig === "cron" ? "accent" : "dim";
+  return uiPill(esc(triggerLabel(t, trig)), kind);
 }
 
 function num(n: number | undefined, color: string): string {

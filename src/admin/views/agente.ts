@@ -457,7 +457,7 @@ function saveForm(t: T, nodeId: string, inner: string): string {
   return `
   <form hx-post="/admin/agente/node/${encodeURIComponent(nodeId)}/save" hx-target="#modal-root" hx-swap="innerHTML">
     ${inner}
-    <button type="submit" class="bigbtn font-display font-bold text-[12.5px] cursor-pointer" style="background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);box-shadow:3px 3px 0 var(--linelit);padding:8px 16px">${t("common.save")}</button>
+    <button type="submit" class="bigbtn font-display font-bold text-[12.5px] cursor-pointer" style="background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);box-shadow:var(--shadow);padding:8px 16px">${t("common.save")}</button>
   </form>`;
 }
 
@@ -531,7 +531,7 @@ export async function renderNodeModal(env: Env, nodeId: string, saved = false): 
         <input type="hidden" name="bot_paused" value="${d.cfg.botPaused ? "0" : "1"}">
         <button type="submit" class="${d.cfg.botPaused ? "bigbtn font-display font-bold" : "ghostbtn"} text-[12.5px] cursor-pointer inline-flex items-center gap-2"
                 style="${d.cfg.botPaused
-                  ? "background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);box-shadow:3px 3px 0 var(--linelit);padding:9px 16px"
+                  ? "background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);box-shadow:var(--shadow);padding:9px 16px"
                   : "background:var(--panel2);border:1px solid var(--line);color:var(--muted);padding:9px 16px"}">
           <i data-lucide="${d.cfg.botPaused ? "play" : "pause"}" width="14" height="14"></i>
           ${d.cfg.botPaused ? t("ag.modal.brain.resume") : t("ag.modal.brain.pause")}
@@ -566,7 +566,7 @@ export async function renderNodeModal(env: Env, nodeId: string, saved = false): 
                   style="background:var(--bg);border:1px solid var(--line);color:var(--cream)">${esc(d.cfg.systemPrompt)}</textarea>
         <div class="mt-2">${renderPromptInsertBar(t, "system_prompt_override", d.cfg.enabledToolNames)}</div>
         <div class="flex flex-wrap gap-2 mt-3">
-          <button type="submit" class="bigbtn font-display font-bold text-[12.5px] cursor-pointer" style="background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);box-shadow:3px 3px 0 var(--linelit);padding:8px 16px">${t("ag.modal.brain.saveManual")}</button>
+          <button type="submit" class="bigbtn font-display font-bold text-[12.5px] cursor-pointer" style="background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);box-shadow:var(--shadow);padding:8px 16px">${t("ag.modal.brain.saveManual")}</button>
           ${hasOverride ? `<button type="submit" name="action" value="reset" formnovalidate class="ghostbtn text-[12.5px] cursor-pointer" style="background:var(--panel2);border:1px solid var(--line);color:var(--muted);padding:8px 16px">${t("ag.modal.brain.backToAuto")}</button>` : ""}
         </div>
       </form>`, saved);
@@ -614,7 +614,7 @@ export async function renderNodeModal(env: Env, nodeId: string, saved = false): 
       <form hx-post="/admin/agente/tools/${encodeURIComponent(name)}/toggle" hx-target="#modal-root" hx-swap="innerHTML" class="inline">
         <button class="${off ? "bigbtn font-display font-bold" : "ghostbtn"} text-[12.5px] cursor-pointer"
                 style="${off
-                  ? "background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);box-shadow:3px 3px 0 var(--linelit);padding:9px 16px"
+                  ? "background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);box-shadow:var(--shadow);padding:9px 16px"
                   : "background:var(--panel2);border:1px solid var(--line);color:var(--muted);padding:9px 16px"}">
           ${off ? t("ag.modal.tool.enable") : t("ag.modal.tool.disable")}
         </button>

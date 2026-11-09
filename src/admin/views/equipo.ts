@@ -17,7 +17,7 @@ export async function renderEquipo(env: Env, msg?: string, isError?: boolean): P
   const list = (await repo.list().catch(() => [])) as AdminEmail[];
 
   const banner = msg
-    ? `<div style="border:1px solid ${isError ? "var(--bad)" : "var(--ok)"};color:${isError ? "var(--bad)" : "var(--ok)"};padding:10px 14px;font-size:12px;background:${isError ? "rgba(248,113,113,.06)" : "rgba(52,211,153,.06)"}">${esc(msg)}</div>`
+    ? `<div style="border:1px solid ${isError ? "var(--bad)" : "var(--ok)"};color:${isError ? "var(--bad)" : "var(--ok)"};padding:10px 14px;font-size:12px;background:${isError ? "var(--bad-soft)" : "var(--ok-soft)"}">${esc(msg)}</div>`
     : "";
 
   const rows =

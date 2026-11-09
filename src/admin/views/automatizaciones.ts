@@ -59,7 +59,7 @@ function ruleCard(t: T, rule: AutoRule, clicks: number): string {
   const platform = platforms(t).find((p) => p.value === rule.platform)?.label ?? rule.platform;
   const keywords = rule.keywords.map(esc).join(", ");
   const chip = (label: string, accent: boolean): string =>
-    `<span style="font-size:10px;letter-spacing:.12em;padding:3px 9px;border:1px solid ${accent ? "var(--accent)" : "var(--line)"};color:${accent ? "var(--accent2)" : "var(--muted)"};background:${accent ? "rgba(45,212,191,.07)" : "transparent"}">${esc(label)}</span>`;
+    `<span style="font-size:10px;letter-spacing:.12em;padding:3px 9px;border:1px solid ${accent ? "var(--accent)" : "var(--line)"};color:${accent ? "var(--accent2)" : "var(--muted)"};background:${accent ? "var(--accent-soft)" : "transparent"}">${esc(label)}</span>`;
 
   const actions = [
     `<a href="/admin/automatizaciones/${esc(rule.id)}/edit" class="text-[11px]" style="border:1px solid var(--line);color:var(--accent2);padding:5px 10px;cursor:pointer;background:none;text-decoration:none">${t("auto.edit")}</a>`,
@@ -84,7 +84,7 @@ function ruleCard(t: T, rule: AutoRule, clicks: number): string {
       <div class="text-[12px]" style="color:var(--cream);border-left:2px solid var(--accent);padding-left:10px;margin-top:2px">${esc(rule.message)}</div>
       ${clicks > 0 ? `<div class="text-[11px] font-mono" style="color:var(--accent2)">${t(clicks === 1 ? "auto.clicks.one" : "auto.clicks.many", { n: clicks })}</div>` : ""}
       ${rule.replyToComment ? `<div class="text-[11.5px]" style="color:var(--muted)">${t("auto.replyPublic")} <span style="color:var(--cream)">${esc(rule.replyToComment)}</span></div>` : ""}
-      ${warnMissingPublic ? `<div class="text-[11.5px]" style="color:var(--warn, #fbbf24);border:1px solid var(--warn, #fbbf24);padding:6px 9px;background:rgba(251,191,36,.06)">⚠ ${t("auto.missingPublic")}</div>` : ""}
+      ${warnMissingPublic ? `<div class="text-[11.5px]" style="color:var(--warn);border:1px solid var(--warn);padding:6px 9px;background:var(--warn-soft)">⚠ ${t("auto.missingPublic")}</div>` : ""}
       ${rule.requireFollow ? `<div class="text-[11.5px]" style="color:var(--accent2)">${t("auto.followGate")}</div>` : ""}
       ${rule.buttonLabel ? `<div class="text-[11.5px]" style="color:var(--muted)">🔘 <span class="font-mono">${esc(rule.buttonLabel)}</span> → ${esc(rule.buttonUrl ?? "")}</div>` : ""}
       <form id="toggle-${esc(rule.id)}" method="POST" action="/admin/automatizaciones/${esc(rule.id)}/toggle" style="display:none"></form>
@@ -178,9 +178,9 @@ export async function renderAutomatizaciones(env: Env, saved?: boolean, error?: 
     : `<div class="bg-panel border" style="padding:24px;text-align:center;color:var(--dim);font-size:12.5px">${t("auto.empty")}</div>`;
 
   const banner = saved
-    ? `<div style="border:1px solid var(--ok);color:var(--ok);padding:10px 14px;font-size:12px;background:rgba(52,211,153,.06)">${t("auto.saved")}</div>`
+    ? `<div style="border:1px solid var(--ok);color:var(--ok);padding:10px 14px;font-size:12px;background:var(--ok-soft)">${t("auto.saved")}</div>`
     : error
-      ? `<div style="border:1px solid var(--bad);color:var(--bad);padding:10px 14px;font-size:12px;background:rgba(248,113,113,.06)">⚠ ${esc(error)}</div>`
+      ? `<div style="border:1px solid var(--bad);color:var(--bad);padding:10px 14px;font-size:12px;background:var(--bad-soft)">⚠ ${esc(error)}</div>`
       : "";
 
   const kindOptions = (Object.keys(kindLabels(t)) as AutoRuleKind[])

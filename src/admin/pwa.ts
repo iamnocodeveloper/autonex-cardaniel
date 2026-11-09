@@ -101,9 +101,9 @@ export function manifest(env: Env): string {
  * CDN (Tailwind, htmx, fuentes) son cross-origin y se dejan pasar sin cachear.
  * Incluye los handlers de push para la Fase 1.
  */
-export function serviceWorker(t: T = makeT("es")): string {
+export function serviceWorker(t: T = makeT("es"), brandName = "Kooni"): string {
   return `/* Kooni PWA service worker — Fase 0 */
-const CACHE = 'kooni-admin-v2'; // subir en cada rediseño para tirar la caché vieja
+const CACHE = 'kooni-admin-v3'; // subir en cada rediseño para tirar la caché vieja
 
 self.addEventListener('install', (e) => {
   self.skipWaiting();
@@ -161,7 +161,7 @@ self.addEventListener('fetch', (e) => {
 // aviso más reciente a /admin/push/latest y lo mostramos.
 self.addEventListener('push', (e) => {
   e.waitUntil((async () => {
-    let n = { title: 'Kooni', body: '${t("pwa.push.body")}', url: '/admin/overview' };
+    let n = { title: ${JSON.stringify(brandName)}, body: '${t("pwa.push.body")}', url: '/admin/overview' };
     try {
       const r = await fetch('/admin/push/latest', { credentials: 'include' });
       if (r.ok) { const j = await r.json(); n = { title: j.title || n.title, body: j.body || n.body, url: j.url || n.url }; }

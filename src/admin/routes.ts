@@ -271,7 +271,7 @@ adminApp.get("/manifest.webmanifest", (c) =>
   }),
 );
 adminApp.get("/sw.js", (c) =>
-  new Response(pwaServiceWorker(), {
+  new Response(pwaServiceWorker(undefined, c.env.BRAND_NAME || "Kooni"), {
     headers: {
       "Content-Type": "text/javascript; charset=utf-8",
       "Service-Worker-Allowed": "/admin/",
