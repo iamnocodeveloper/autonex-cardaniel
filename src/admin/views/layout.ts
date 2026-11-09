@@ -580,6 +580,14 @@ function applyNiche(item: Item, niche: NichePack | null): Item {
 // Marca Kooni: glifo "K" de nodo de conversación + punto "en línea" (menta).
 // SVG inline para no depender de lucide en el brand mark.
 const K_MARK = `<svg width="18" height="18" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M11 23V9h2.5l5 7.5 5-7.5H26v14h-3V15l-4.5 6.8L13 15v8h-2z" fill="var(--accent)"/><circle cx="23" cy="9" r="2" fill="var(--accent-2)"/></svg>`;
+// Marca blanca: si el nombre no es Kooni, usar la inicial como monograma para
+// no mostrar la "K" de Kooni en el panel de otro cliente/revendedor.
+function brandMark(name: string): string {
+  const n = name.trim();
+  if (!n || n.toLowerCase() === "kooni") return K_MARK;
+  const letter = escLogin(n[0]!.toUpperCase());
+  return `<svg width="18" height="18" viewBox="0 0 32 32" fill="none" aria-hidden="true"><text x="16" y="24" text-anchor="middle" font-family="Sora, sans-serif" font-size="21" font-weight="700" fill="var(--accent)">${letter}</text><circle cx="25" cy="8" r="2" fill="var(--accent-2)"/></svg>`;
+}
 
 // ── Marca blanca (revendedores) ──────────────────────────────────────────────
 // El panel hereda la identidad de Kooni salvo que el instalador/revendedor
@@ -689,7 +697,7 @@ function sidebar(activeTab: string, locked: (id: string) => boolean, niche: Nich
     <div class="sb-brand">
       <div class="brand-row">
         <div class="brand-mark">
-          ${brand.logo ? `<img src="${brand.logo}" alt="">` : K_MARK}
+          ${brand.logo ? `<img src="${brand.logo}" alt="">` : brandMark(brand.name)}
         </div>
         <div class="brand-meta">
           <div class="brand-name" title="${escLogin(brand.name)}">${brand.name}</div>
@@ -888,7 +896,7 @@ export function loginPage(opts: { error?: string; env?: Env; t?: T } = {}): stri
       <div style="position:relative;display:flex;flex-direction:column;gap:18px;max-width:380px">
         <div style="display:flex;align-items:center;gap:12px">
           <div style="width:44px;height:44px;flex:none;border:1.5px solid var(--accent);display:flex;align-items:center;justify-content:center;background:var(--accent-soft);box-shadow:var(--shadow)">
-            ${brand.logo ? `<img src="${brand.logo}" alt="" style="width:26px;height:26px;object-fit:contain">` : K_MARK}
+            ${brand.logo ? `<img src="${brand.logo}" alt="" style="width:26px;height:26px;object-fit:contain">` : brandMark(brand.name)}
           </div>
           <div style="font-family:'Sora';font-weight:700;font-size:24px;letter-spacing:-.02em">${brand.name}</div>
         </div>

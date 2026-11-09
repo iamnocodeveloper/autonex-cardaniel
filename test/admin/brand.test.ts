@@ -22,6 +22,11 @@ describe("marca blanca del panel", () => {
     expect(html).toContain("AUTONEX");
   });
 
+  it("reemplaza la K de Kooni por el monograma de la marca", () => {
+    const html = loginPage({ env: branded });
+    expect(html).toContain(">A</text>");
+  });
+
   it("aplica el acento y deriva el soft si no se especifica", () => {
     const html = loginPage({ env: branded });
     expect(html).toContain("--accent:#C9A052");
