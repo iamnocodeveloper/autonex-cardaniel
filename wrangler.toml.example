@@ -80,9 +80,17 @@ LICENSE_PUBLIC_KEY = "MCowBQYDK2VwAyEALxrjpy7pkyHSqlCcObUfMygNXNznd9/YXhamO17e4t
 # BRAND_ACCENT2 = "#a679f6"
 # BRAND_BG = "#0f0e17"
 # BRAND_PANEL = "#181624"
-# Texto de marca (solo tema oscuro; en claro se usa tinta neutra):
+# Texto y neutrales de marca (necesarios si defines bg/panel propios):
 # BRAND_TEXT = "#ffffff"
 # BRAND_MUTED = "#cfc9da"
+# BRAND_DIM = "#8f8a9e"
+# BRAND_PANEL2 = "#221f2b"
+# BRAND_RAISE = "#2f2a3d"
+# BRAND_LINE = "#332f40"
+# BRAND_LINELIT = "#463f58"
+# BRAND_ON_ACCENT = "#170f1c"
+# BRAND_THEME = "dark"   # "dark" | "light": esquema único, oculta el toggle
+# BRAND_VIOLET = "#e0b96a"  # acento del canvas de flujo (evita el violeta Kooni)
 # Zernio (multicanal — IG/FB/TG/WhatsApp…): automatizaciones desde el panel /admin/automatizaciones.
 # (las reglas se gestionan en el panel; aquí solo si quieres defaults por env)
 

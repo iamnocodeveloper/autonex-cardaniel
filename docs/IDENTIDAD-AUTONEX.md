@@ -19,14 +19,21 @@
 |---|---|---|
 | `BRAND_PRIMARY` / `--accent` | `#C9A052` | Dorado de marca: acciones y activo |
 | `BRAND_ACCENT2` / `--accent-2` | `#E0B96A` | Dorado claro secundario |
-| `BRAND_TEXT` / `--cream` (oscuro) | `#FFFFFF` | Texto principal **blanco** |
-| `BRAND_MUTED` / `--muted` (oscuro) | `#D4D4D8` | Texto secundario |
+| `BRAND_TEXT` / `--cream` | `#FFFFFF` | Texto principal **blanco** |
+| `BRAND_MUTED` / `--muted` | `#D4D4D8` | Texto secundario |
+| `BRAND_DIM` / `--dim` | `#A1A1AA` | Texto terciario / labels |
 | `BRAND_BG` / `--bg` | `#0D0D0F` | Fondo neutro (sin matiz violeta) |
 | `BRAND_PANEL` / `--panel` | `#17171A` | Superficies |
+| `BRAND_PANEL2` / `--panel2` | `#202024` | Hover, filas, inputs |
+| `BRAND_RAISE` / `--raise` | `#2A2A2F` | Elementos elevados |
+| `BRAND_LINE` / `--line` | `#2E2E34` | Bordes |
+| `BRAND_LINELIT` / `--linelit` | `#3D3D45` | Bordes iluminados |
+| `BRAND_VIOLET` / `--violet` | `#E0B96A` | Acento del canvas (sin violeta) |
 
 - `--accent-soft` se deriva del dorado con `color-mix`.
-- **Tema claro:** el texto vuelve a tinta oscura y el acento se oscurece
-  automáticamente (`color-mix` con negro) para conservar contraste ≥4.5:1.
+- **Esquema único oscuro** (`BRAND_THEME="dark"`): el toggle de tema no se
+  muestra y el panel conserva fondo oscuro y texto blanco también si el
+  navegador prefiere tema claro.
 - Sobre botones dorados, el texto usa `--on-accent` (tinta oscura), no blanco.
 
 ## 3. Tipografía
@@ -43,13 +50,21 @@ para datos y código.
 ## 5. Variables (en `wrangler.toml`, no en git)
 
 ```toml
-BRAND_NAME    = "AUTONEX"
-BRAND_PRIMARY = "#C9A052"
-BRAND_ACCENT2 = "#E0B96A"
-BRAND_TEXT    = "#FFFFFF"
-BRAND_MUTED   = "#D4D4D8"
-BRAND_BG      = "#0D0D0F"
-BRAND_PANEL   = "#17171A"
+BRAND_NAME      = "AUTONEX"
+BRAND_PRIMARY   = "#C9A052"
+BRAND_ACCENT2   = "#E0B96A"
+BRAND_TEXT      = "#FFFFFF"
+BRAND_MUTED     = "#D4D4D8"
+BRAND_DIM       = "#A1A1AA"
+BRAND_BG        = "#0D0D0F"
+BRAND_PANEL     = "#17171A"
+BRAND_PANEL2    = "#202024"
+BRAND_RAISE     = "#2A2A2F"
+BRAND_LINE      = "#2E2E34"
+BRAND_LINELIT   = "#3D3D45"
+BRAND_ON_ACCENT = "#170F1C"
+BRAND_THEME     = "dark"
+BRAND_VIOLET    = "#E0B96A"
 ```
 
 ## 6. Repositorio

@@ -595,7 +595,8 @@ function brandMark(name: string): string {
 // properties con override; nombre/logo van en la sidebar.
 interface Brand {
   name: string; logo: string; primary: string; primarySoft: string; accent2: string;
-  bg: string; panel: string; text: string; muted: string;
+  bg: string; panel: string; panel2: string; raise: string; line: string; linelit: string;
+  text: string; muted: string; dim: string; onAccent: string; theme: string; violet: string;
 }
 function resolveBrand(env?: Env, overlayBrand?: Record<string, string>): Brand {
   // Precedencia: marca del backend (overlay que pone el super admin) > vars
@@ -611,14 +612,29 @@ function resolveBrand(env?: Env, overlayBrand?: Record<string, string>): Brand {
     accent2: pick("accent2", env?.BRAND_ACCENT2),
     bg: pick("bg", env?.BRAND_BG),
     panel: pick("panel", env?.BRAND_PANEL),
+    panel2: pick("panel2", env?.BRAND_PANEL2),
+    raise: pick("raise", env?.BRAND_RAISE),
+    line: pick("line", env?.BRAND_LINE),
+    linelit: pick("linelit", env?.BRAND_LINELIT),
     text: pick("text", env?.BRAND_TEXT),
     muted: pick("muted", env?.BRAND_MUTED),
+    dim: pick("dim", env?.BRAND_DIM),
+    onAccent: pick("on_accent", env?.BRAND_ON_ACCENT),
+    theme: pick("theme", env?.BRAND_THEME),
+    violet: pick("violet", env?.BRAND_VIOLET),
   };
 }
 function brandOverrides(b: Brand): string {
   const v: string[] = [];
+  // Superficies y neutrales. Si la marca define su propio esquema (bg/panel),
+  // debe poder reemplazar TODA la escala; si no, quedan los grises violetas de
+  // Kooni y el panel se ve "morado" aunque el acento sea otro.
   if (b.bg) v.push(`--bg:${b.bg}`);
   if (b.panel) v.push(`--panel:${b.panel}`);
+  if (b.panel2) v.push(`--panel2:${b.panel2}`);
+  if (b.raise) v.push(`--raise:${b.raise}`);
+  if (b.line) { v.push(`--line:${b.line}`); v.push(`--border:${b.line}`); }
+  if (b.linelit) { v.push(`--linelit:${b.linelit}`); v.push(`--border-lit:${b.linelit}`); }
   if (b.primary) {
     v.push(`--accent:${b.primary}`);
     // Sin un soft explícito, derivarlo del acento para que no quede el fucsia
@@ -627,28 +643,39 @@ function brandOverrides(b: Brand): string {
   }
   if (b.accent2) v.push(`--accent-2:${b.accent2}`);
   if (b.primarySoft) v.push(`--accent-soft:${b.primarySoft}`);
+  if (b.onAccent) v.push(`--on-accent:${b.onAccent}`);
+  if (b.violet) v.push(`--violet:${b.violet}`);
+  // Esquema oscuro de marca: la sombra del tema claro tiene matiz violeta.
+  if (b.theme === "dark") v.push(`--shadow:0 8px 24px -8px rgba(0,0,0,.55)`);
 
-  // En tema claro un acento claro pierde contraste: derivar un tono más
-  // profundo. Solo aplica a la marca; la identidad Kooni no se toca porque
-  // sus overrides quedan vacíos.
+  // Texto de marca: se aplica en AMBOS temas. Si el cliente define su propio
+  // fondo oscuro, el tema claro ya no es claro; dejar el texto oscuro ahí lo
+  // volvía ilegible (el bug del login de AUTONEX).
+  if (b.text) v.push(`--cream:${b.text}`);
+  if (b.muted) v.push(`--muted:${b.muted}`);
+  if (b.dim) v.push(`--dim:${b.dim}`);
+
+  // Si la marca NO redefine las superficies, en tema claro un acento claro
+  // pierde contraste: derivar un tono más profundo. Con superficies propias
+  // (bg/panel) el tema claro usa el mismo esquema de la marca.
   const light: string[] = [];
-  if (b.primary) light.push(`--accent:color-mix(in srgb, ${b.primary} 65%, #000)`);
-  if (b.accent2) light.push(`--accent-2:color-mix(in srgb, ${b.accent2} 72%, #000)`);
-
-  // El color de texto de marca se aplica SOLO al tema oscuro: en claro tiene
-  // que seguir siendo tinta oscura para no quedar ilegible.
-  const darkText: string[] = [];
-  if (b.text) darkText.push(`--cream:${b.text}`);
-  if (b.muted) darkText.push(`--muted:${b.muted}`);
+  if (!b.bg && !b.panel) {
+    if (b.primary) light.push(`--accent:color-mix(in srgb, ${b.primary} 65%, #000)`);
+    if (b.accent2) light.push(`--accent-2:color-mix(in srgb, ${b.accent2} 72%, #000)`);
+  }
 
   const out: string[] = [];
   if (v.length) out.push(`:root,:root[data-theme]{${v.join(";")}}`);
   if (light.length) out.push(`:root[data-theme="light"]{${light.join(";")}}`);
-  if (darkText.length) out.push(`:root[data-theme="dark"],:root:not([data-theme="light"]){${darkText.join(";")}}`);
+  // Esquema único (ej. cliente oscuro): el toggle de tema no aplica.
+  if (b.theme) {
+    out.push(`:root{color-scheme:${b.theme}}`);
+    out.push(`#kooni-theme{display:none!important}`);
+  }
   return out.join("");
 }
 
-function sidebar(activeTab: string, locked: (id: string) => boolean, niche: NichePack | null, tierLabel: string, brand: Brand = { name: "Kooni", logo: "", primary: "", primarySoft: "", accent2: "", bg: "", panel: "", text: "", muted: "" }, t: (k: string) => string = (k) => k): string {
+function sidebar(activeTab: string, locked: (id: string) => boolean, niche: NichePack | null, tierLabel: string, brand: Brand = { name: "Kooni", logo: "", primary: "", primarySoft: "", accent2: "", bg: "", panel: "", panel2: "", raise: "", line: "", linelit: "", text: "", muted: "", dim: "", onAccent: "", theme: "", violet: "" }, t: (k: string) => string = (k) => k): string {
   // Ítems extra que aporta el niche pack activo (packs "pesados", ver NicheHooks).
   // Se insertan en la sección que declaran (por su label): restaurante → Pedidos
   // en "Inbox", Menú en "Mi Agente", Reportes en "Análisis".

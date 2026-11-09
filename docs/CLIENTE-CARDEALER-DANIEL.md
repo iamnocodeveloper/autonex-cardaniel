@@ -41,8 +41,16 @@ BOT_TIER          = "pro"
 BRAND_NAME        = "AUTONEX"   # identidad del panel (solo este cliente)
 BRAND_PRIMARY     = "#C9A052"   # dorado
 BRAND_ACCENT2     = "#E0B96A"
-BRAND_TEXT        = "#FFFFFF"   # texto blanco (solo tema oscuro)
+BRAND_TEXT        = "#FFFFFF"   # texto blanco
 BRAND_MUTED       = "#D4D4D8"
+BRAND_DIM         = "#A1A1AA"
+BRAND_PANEL2      = "#202024"
+BRAND_RAISE       = "#2A2A2F"
+BRAND_LINE        = "#2E2E34"
+BRAND_LINELIT     = "#3D3D45"
+BRAND_ON_ACCENT   = "#170F1C"   # tinta sobre botones dorados
+BRAND_THEME       = "dark"      # esquema único; oculta el toggle
+BRAND_VIOLET      = "#E0B96A"   # canvas sin violeta
 
 scrape_provider                 = 'auto'   # Decodo → sitemap directo → AIsa
 feature_web_sync_enabled        = '1'

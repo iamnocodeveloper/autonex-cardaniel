@@ -213,11 +213,18 @@ overlay del backend → vars `BRAND_*` → identidad Kooni.
 | `BRAND_PRIMARY_SOFT` | `--accent-soft` explícito |
 | `BRAND_ACCENT2` | `--accent-2` |
 | `BRAND_BG` / `BRAND_PANEL` | Fondo y superficie |
-| `BRAND_TEXT` | Texto principal **solo en tema oscuro** |
-| `BRAND_MUTED` | Texto secundario **solo en tema oscuro** |
+| `BRAND_PANEL2` / `BRAND_RAISE` | Hover/filas e elementos elevados |
+| `BRAND_LINE` / `BRAND_LINELIT` | Bordes normal e iluminado |
+| `BRAND_TEXT` / `BRAND_MUTED` / `BRAND_DIM` | Texto principal, secundario y terciario |
+| `BRAND_ON_ACCENT` | Texto sobre el acento (tinta oscura si el acento es claro) |
+| `BRAND_THEME` | `"dark"` / `"light"`: esquema único; oculta el toggle de tema |
+| `BRAND_VIOLET` | `--violet` del canvas de flujo (para marcas sin morado) |
 
-- En **tema claro** se mantiene la tinta neutra y el acento se oscurece
-  automáticamente con `color-mix` para conservar contraste.
+- El texto y los neutrales de marca se aplican en **ambos temas**: si defines
+  `BRAND_BG`/`BRAND_PANEL`, el panel mantiene ese esquema aunque el navegador
+  prefiera claro (por eso se recomienda `BRAND_THEME="dark"`).
+- Si la marca **no** redefine las superficies, el acento se oscurece
+  automáticamente en tema claro con `color-mix` para conservar contraste.
 - Sin `BRAND_*`, no se emite ningún override: el panel usa la identidad Kooni.
 - La PWA (`src/admin/pwa.ts`) usa `BRAND_BG` / `BRAND_PRIMARY` / `BRAND_ACCENT2` /
   `BRAND_NAME`.

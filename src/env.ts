@@ -71,10 +71,23 @@ export interface Env {
   BRAND_ACCENT2?: string;
   BRAND_BG?: string;
   BRAND_PANEL?: string;
-  // Texto de marca. Se aplica SOLO en tema oscuro; en claro se mantiene la
-  // tinta neutra para conservar contraste.
+  // Texto de marca. Se aplica en ambos temas: si el cliente define su propio
+  // fondo, debe controlar también el color del texto.
   BRAND_TEXT?: string;
   BRAND_MUTED?: string;
+  // Neutrales completos para una marca con su propio esquema (evita que
+  // queden los grises violetas de Kooni).
+  BRAND_DIM?: string;
+  BRAND_PANEL2?: string;
+  BRAND_RAISE?: string;
+  BRAND_LINE?: string;
+  BRAND_LINELIT?: string;
+  // Texto sobre el acento (para acentos claros, tinta oscura).
+  BRAND_ON_ACCENT?: string;
+  // "dark" | "light": esquema único de la marca; oculta el toggle de tema.
+  BRAND_THEME?: "dark" | "light";
+  // Acento violeta del canvas de flujo (para marcas sin morado).
+  BRAND_VIOLET?: string;
 
   // Secrets (member-set via wrangler secret put)
   ANTHROPIC_API_KEY: string;
