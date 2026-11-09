@@ -1,0 +1,61 @@
+# AUTONEX — configuración de referencia para desplegar cardaniel.
+# El archivo real es `wrangler.toml` (gitignored, con los secretos del Worker).
+# Copiar a `wrangler.toml` y completar los valores marcados con `<...>`.
+
+name = "kooni-bot-cardealer-daniel2-948b8b"
+main = "src/index.ts"
+compatibility_date = "2026-05-01"
+compatibility_flags = ["nodejs_compat"]
+
+[ai]
+binding = "AI"
+
+[[durable_objects.bindings]]
+name = "AGENT"
+class_name = "SupportAgent"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["SupportAgent"]
+
+# Base de datos EXISTENTE de cardaniel — no recrear.
+[[d1_databases]]
+binding = "DB"
+database_name = "kooni_cardealer_dani_948b8b_db"
+database_id = "40ca16cf-502e-40dd-a5c9-1a8697ee9804"
+
+# Índice vectorial EXISTENTE (1024 dims, cosine) — no recrear.
+[[vectorize]]
+binding = "KB"
+index_name = "kooni_cardealer_dani_948b8b_kb"
+
+[vars]
+LLM_PROVIDER = "openai"
+BOT_INSTANCE_ID = "948b8b"
+BOT_NAME = "Daniel"
+BUSINESS_NAME = "Daniel autos"
+BOT_LANGUAGE = "es-MX"
+BOT_TIER = "pro"
+
+# Identidad AUTONEX (solo este cliente).
+BRAND_NAME = "AUTONEX"
+BRAND_PRIMARY = "#C9A052"
+BRAND_ACCENT2 = "#E0B96A"
+BRAND_TEXT = "#FFFFFF"
+BRAND_MUTED = "#D4D4D8"
+BRAND_BG = "#0D0D0F"
+BRAND_PANEL = "#17171A"
+
+INSTALL_UNLIMITED = "1"
+BUFFER_SECONDS = "15"
+DASHBOARD_BASE_URL = "https://kooni-bot-cardealer-daniel2-948b8b.cardealerdani.workers.dev"
+USAGE_PUSH_URL = "https://f5gacw7g.function2.insforge.app/registrar-uso"
+
+# Secretos: NO se ponen aquí. Cargarlos con `wrangler secret put`:
+#   KOONI_REGISTER_TOKEN, VAPID_PRIVATE_KEY, DASHBOARD_PASSWORD, DECODO_AUTH,
+#   KB_REINDEX_TOKEN, QUOTE_URL_SECRET, TELEGRAM_BOT_TOKEN, llm_api_key, etc.
+VAPID_PUBLIC_KEY = "<VAPID_PUBLIC_KEY>"
+VAPID_SUBJECT = "mailto:<correo-del-dueno>"
+
+[triggers]
+crons = ["0 3 * * *"]

@@ -17,6 +17,8 @@ opera. Sin secretos: las credenciales viven en Cloudflare (secrets) y en
 | Panel | https://kooni-bot-cardealer-daniel2-948b8b.cardealerdani.workers.dev/admin |
 | Cuenta Cloudflare | `Info@dmezzadri.com` (`b579b15488cb0efc53c2434d381cbe17`) |
 | Instancia | `BOT_INSTANCE_ID = 948b8b` |
+| Repositorio | `github.com/iamnocodeveloper/autonex-cardaniel` — repo **aislado** del template (el template queda como remoto `upstream`) |
+| Identidad | **AUTONEX** (dorado `#C9A052`, texto blanco en oscuro) — ver `docs/IDENTIDAD-AUTONEX.md` |
 | Versión desplegada | **1.64.0** — deploy `300e0ecf-456c-4f1a-937c-9e96ca68d6ed` (2026-10-29) |
 | Cron | `0 3 * * *` (Web Sync nocturno + fotos + métricas) |
 
@@ -36,6 +38,11 @@ opera. Sin secretos: las credenciales viven en Cloudflare (secrets) y en
 INSTALL_UNLIMITED = "1"            # fuera del esquema de licencias: sin límites ni módulos bloqueados
 LLM_PROVIDER      = "openai"       # contra el gateway AIsa (llm_api_base_url = https://api.aisa.one/v1)
 BOT_TIER          = "pro"
+BRAND_NAME        = "AUTONEX"   # identidad del panel (solo este cliente)
+BRAND_PRIMARY     = "#C9A052"   # dorado
+BRAND_ACCENT2     = "#E0B96A"
+BRAND_TEXT        = "#FFFFFF"   # texto blanco (solo tema oscuro)
+BRAND_MUTED       = "#D4D4D8"
 
 scrape_provider                 = 'auto'   # Decodo → sitemap directo → AIsa
 feature_web_sync_enabled        = '1'
@@ -102,6 +109,23 @@ Disparar una corrida sin entrar al panel (Basic auth):
 curl.exe -u admin:<DASHBOARD_PASSWORD> -X POST -H "Accept: application/json" `
   https://kooni-bot-cardealer-daniel2-948b8b.cardealerdani.workers.dev/admin/scraping/run
 ```
+
+## 6.1 Repositorio aislado (2026-11-09)
+
+Cardaniel es un cliente aparte: el código vive en
+`github.com/iamnocodeveloper/autonex-cardaniel` (público, con el historial del
+template). El template original queda como remoto **`upstream`**:
+
+```powershell
+git fetch upstream
+git merge upstream/main   # traer mejoras del template cuando convenga
+```
+
+- `wrangler.toml` (IDs de Cloudflare + token de uso) **no se versiona**.
+- Para desplegar: fijar la cuenta `Info@dmezzadri.com` (ver §6) y correr
+  `npx wrangler deploy` (o `pnpm run deploy` si pnpm está sano).
+- La identidad AUTONEX se aplica con `BRAND_*` en `wrangler.toml`; ver
+  `docs/IDENTIDAD-AUTONEX.md`.
 
 ## 7. Respaldo
 
