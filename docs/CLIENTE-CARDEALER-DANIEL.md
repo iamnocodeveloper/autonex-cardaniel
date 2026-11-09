@@ -19,7 +19,7 @@ opera. Sin secretos: las credenciales viven en Cloudflare (secrets) y en
 | Instancia | `BOT_INSTANCE_ID = 948b8b` |
 | Repositorio | `github.com/iamnocodeveloper/autonex-cardaniel` — repo **aislado** del template (el template queda como remoto `upstream`) |
 | Identidad | **AUTONEX** (dorado `#C9A052`, texto blanco en oscuro) — ver `docs/IDENTIDAD-AUTONEX.md` |
-| Versión desplegada | **1.64.0** — deploy `300e0ecf-456c-4f1a-937c-9e96ca68d6ed` (2026-10-29) |
+| Versión desplegada | **1.67.0** — deploy 2026-11-09 (identidad AUTONEX aplicada y verificada en vivo) |
 | Cron | `0 3 * * *` (Web Sync nocturno + fotos + métricas) |
 
 ## 2. Recursos
